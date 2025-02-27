@@ -2,9 +2,8 @@
 * windows系统下日志实现， 单个日志文件的最大阈值为200M， 超过200M会在末尾
 * 添加_bak, CreoPlugin.log_bak作为短暂备份
 */
-#ifndef MYLOGGER_H
-#define
-MYLOGGER_H
+#ifndef LOGGER_H
+#define LOGGER_H
 
 #include<string>
 #include<fstream>
@@ -180,10 +179,10 @@ do {
 } while(false)  \
 
 // 打印错误日志, logReturnErrCode < 0的分支不会走， 下面这么写用于屏蔽告警
-#define LOG(fmt, ...)
+#define ERR_LOG(fmt, ...)
 do {
     char buf[MAX_LOG_STR_LEN]{};
-    auto logReturnErrCode = sprintf_s(buf, sizeof(buf), "[%s][%s:%s:%ld]"fmt"\n",GetThreadId().data() __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__);
+    auto logReturnErrCode = sprintf_s(buf, sizeof(buf), "[ERROR][%s][%s:%s:%ld]"fmt"\n",GetThreadId().data() __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__);
     if (logReturnErrCode >= 0) {     \
         TextLog::GetInstance().Log(std::string(buf));   \
     }   \
