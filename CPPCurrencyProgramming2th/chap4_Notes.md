@@ -240,40 +240,45 @@ int main() {
 
 ## 6. 多选题目
 
-1. 关于 std::condition_variable，以下说法正确的是（ ）
-   A. std::condition_variable 必须与 std::mutex 一起使用
-   B. 调用 wait 方法时，如果不使用谓词，可能会发生虚假唤醒
-   C. notify_one 方法会唤醒所有等待的线程
-   D. wait_for 和 wait_until 方法可以实现超时等待
-2. 在生产者 - 消费者模型中，以下哪些做法可以提高性能和安全性（ ）
-   A. 生产者和消费者使用同一个互斥量保护共享队列
-   B. 生产者在添加数据后及时通知消费者
-   C. 消费者在处理数据时长时间持有锁
-   D. 使用谓词来避免消费者的虚假唤醒
-3. 关于 std::future 和 std::promise，以下说法正确的是（ ）
-   A. std::future 可以用来获取异步操作的结果
-   B. std::promise 可以存储值或异常
-   C. 一个 std::promise 只能与一个 std::future 关联
-   D. std::future 的 get 方法可以多次调用
-4. 以下哪些情况可能导致线程的虚假唤醒（ ）
-   A. 操作系统的调度策略
-   B. 硬件中断
-   C. 信号处理
-   D. 调用 notify_one 或 notify_all 方法
+1. 关于 std::condition_variable，以下说法正确的是（ ）  
+   A. std::condition_variable 必须与 std::mutex 一起使用  
+   B. 调用 wait 方法时，如果不使用谓词，可能会发生虚假唤醒  
+   C. notify_one 方法会唤醒所有等待的线程  
+   D. wait_for 和 wait_until 方法可以实现超时等待  
+
+2. 在生产者 - 消费者模型中，以下哪些做法可以提高性能和安全性（ ）  
+   A. 生产者和消费者使用同一个互斥量保护共享队列  
+   B. 生产者在添加数据后及时通知消费者  
+   C. 消费者在处理数据时长时间持有锁  
+   D. 使用谓词来避免消费者的虚假唤醒  
+   
+3. 关于 std::future 和 std::promise，以下说法正确的是（ ）  
+   A. std::future 可以用来获取异步操作的结果  
+   B. std::promise 可以存储值或异常  
+   C. 一个 std::promise 只能与一个 std::future 关联  
+   D. std::future 的 get 方法可以多次调用  
+
+4. 以下哪些情况可能导致线程的虚假唤醒（ ）  
+   A. 操作系统的调度策略  
+   B. 硬件中断  
+   C. 信号处理  
+   D. 调用 notify_one 或 notify_all 方法  
+
 5. 在使用 std::condition_variable 时，以下做法正确的是（ ）
-   A. 在调用 wait 方法前先锁定互斥量
+   A. 在调用 wait 方法前先锁定互斥量  
    B. 在调用 notify_one 或 notify_all 方法时持有互斥量
    C. 使用谓词来避免虚假唤醒
    D. 在 wait 方法返回后再次检查条件
-6. 答案：ABD
+
+1. 答案：ABD
    解释：std::condition_variable 依赖 std::mutex 来保护共享数据，所以必须与 std::mutex 一起使用，A 正确；不使用谓词时，wait 方法可能会因操作系统或硬件的原因发生虚假唤醒，B 正确；notify_one 方法只会唤醒一个等待的线程，notify_all 才会唤醒所有等待的线程，C 错误；wait_for 和 wait_until 方法可以让线程在等待一定时间后自动返回，实现超时等待，D 正确。
-7. 答案：ABD
+2. 答案：ABD
    解释：生产者和消费者使用同一个互斥量保护共享队列可以避免数据竞争，保证线程安全，A 正确；生产者在添加数据后及时通知消费者可以减少消费者的等待时间，提高性能，B 正确；消费者在处理数据时长时间持有锁会导致其他线程无法访问共享队列，降低并发性能，C 错误；使用谓词来避免消费者的虚假唤醒可以确保消费者只在队列中有数据时才进行处理，提高程序的正确性和性能，D 正确。
-8. 答案：ABC
+3. 答案：ABC
    解释：std::future 主要用于获取异步操作的结果，A 正确；std::promise 可以存储一个值或异常，并通过关联的 std::future 传递给其他线程，B 正确；一个 std::promise 只能与一个 std::future 关联，C 正确；std::future 的 get 方法只能调用一次，多次调用会导致未定义行为，D 错误。
-9. 答案：ABC
+4. 答案：ABC
    解释：操作系统的调度策略、硬件中断和信号处理等因素都可能导致线程的虚假唤醒，A、B、C 正确；调用 notify_one 或 notify_all 方法是正常的通知机制，不会导致虚假唤醒，D 错误。
-10. 答案：ACD
+5. 答案：ACD
     解释：在调用 wait 方法前先锁定互斥量是必要的，因为 wait 方法会在等待时自动释放锁，在被唤醒后重新获取锁，A 正确；调用 notify_one 或 notify_all 方法时不需要持有互斥量，B 错误；使用谓词可以避免虚假唤醒，确保线程只在条件满足时才继续执行，C 正确；在 wait 方法返回后再次检查条件可以进一步确保程序的正确性，D 正确。
 
 ## 7. 设计题目
