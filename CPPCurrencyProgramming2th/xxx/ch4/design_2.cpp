@@ -13,18 +13,15 @@ public:
     template <typename Func>
     static CancellableTaskManager createTask(Func func) {
         auto cancelFlag = std::make_shared<std::atomic<bool>>(false);
-        auto future = std::async(std::launch::async, [func, cancelFlag]() -> Result {
-            if (cancelFlag->load()) {
-                throw std::runtime_error("Task cancelled");
-            }
-            return func();
+        auto future = std::async(std::launch::async, [func, cancelFlag]() -> Result { // 这里是怎么传入cancelFlag
+            return func(cancelFlag); // 将取消标志传递给任务函数
         });
-        return CancellableTaskManager(future, cancelFlag);
+        return CancellableTaskManager(std::move(future), cancelFlag);
     }
 
-    // 获取任务的 future 对象
-    std::future<Result> getFuture() const {
-        return future_;
+    // 获取任务的 future 对象（移除const，使用移动语义）
+    std::future<Result> getFuture() {
+        return std::move(future_);
     }
 
     // 取消任务
@@ -41,22 +38,24 @@ private:
     std::shared_ptr<std::atomic<bool>> cancelFlag_;
 };
 
-// 示例任务函数
-int exampleTask() {
+// 示例任务函数，现在接受取消标志参数
+int exampleTask(std::shared_ptr<std::atomic<bool>> cancelFlag) {
     for (int i = 0; i < 5; ++i) {
+        // 检查是否已取消
+        if (cancelFlag->load()) {
+            throw std::runtime_error("Task cancelled during execution");
+        }
         std::this_thread::sleep_for(std::chrono::seconds(1));
         std::cout << "Task is working: " << i << std::endl;
-        // 检查取消标志（可选，根据实际需求决定）
-        // if (/* 取消条件 */) {
-        //     throw std::runtime_error("Task cancelled by condition");
-        // }
     }
     return 42;
 }
 
 int main() {
-    // 创建可取消的任务
-    auto taskManager = CancellableTaskManager<int>::createTask(exampleTask);
+    // 创建可取消的任务，使用lambda适配函数签名
+    auto taskManager = CancellableTaskManager<int>::createTask(
+        [](std::shared_ptr<std::atomic<bool>> flag) { return exampleTask(flag); }
+    );
     // 获取任务的 future 对象
     auto future = taskManager.getFuture();
 
