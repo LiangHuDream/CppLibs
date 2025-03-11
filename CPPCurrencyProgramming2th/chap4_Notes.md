@@ -269,7 +269,7 @@ int main() {
    B. 在调用 notify_one 或 notify_all 方法时持有互斥量  
    C. 使用谓词来避免虚假唤醒  
    D. 在 wait 方法返回后再次检查条件  
-
+## 6. 多选题目答案
 1. 答案：ABD
    解释：std::condition_variable 依赖 std::mutex 来保护共享数据，所以必须与 std::mutex 一起使用，A 正确；不使用谓词时，wait 方法可能会因操作系统或硬件的原因发生虚假唤醒，B 正确；notify_one 方法只会唤醒一个等待的线程，notify_all 才会唤醒所有等待的线程，C 错误；wait_for 和 wait_until 方法可以让线程在等待一定时间后自动返回，实现超时等待，D 正确。
 2. 答案：ABD
