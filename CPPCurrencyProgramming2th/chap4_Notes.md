@@ -1,3 +1,4 @@
+
 ## 1. 等待事件或等待其他条件
 
 **std::condition_variable**：是 C++ 标准库提供的用于线程间同步的工具，它允许一个或多个线程等待某个条件满足后再继续执行。通常与 std::mutex 一起使用，std::mutex 用于保护共享数据，std::condition_variable 用于线程间的通知机制。
@@ -283,60 +284,616 @@ int main() {
 
 ## 7. 设计题目
 
-### 7.1 设计一个带有优先级和超时机制的多生产者多消费者任务队列
+
+### 7.1 设计一个线程安全的缓存系统
 
 要求：
-
-- 任务队列中的任务具有不同的优先级，高优先级的任务优先被处理。
-- 生产者可以向队列中添加任务，消费者从队列中取出任务进行处理。
-- 消费者在取出任务时，如果队列中没有任务，最多等待指定的超时时间。
-- 支持多线程并发操作，确保线程安全。
-
-### 7.2 实现一个异步文件读写任务调度器
-
+- 多个线程可查询键是否存在，若不存在则触发计算任务
+- 约束：同一键同时只允许一个计算任务
+### 7.2 实现可取消的并行任务
 要求：
-
-- 可以提交文件读取和写入任务，任务调度器会异步执行这些任务。
-- 每个任务可以设置回调函数，当任务完成时调用回调函数。
-- 支持任务的优先级调度，高优先级的任务优先执行。
-  处理文件读写过程中可能出现的异常，如文件不存在、权限不足等。
-
-### 7.3 设计一个分布式缓存系统的本地缓存模块
-
+- 任务提交后返回future，允许调用方取消正在执行的任务
+- 需要考虑资源清理和线程终止安全
+### 7.3 构建生产者-消费者管道
 要求：
-
-- 本地缓存模块负责缓存数据，减少对远程缓存或数据库的访问。
-- 支持缓存数据的过期策略，当数据过期时自动从缓存中移除。
-- 当本地缓存中没有所需数据时，从远程缓存或数据库中获取数据并更新本地缓存。
-- 支持多线程并发访问本地缓存，确保线程安全。
-- 提供缓存数据的统计信息，如缓存命中率、缓存大小等。
-
-### 7.4 实现一个基于事件驱动的异步网络服务器
-
+- 多个生产者和消费者通过有界缓冲区通信
+- 消费者需要优先处理特定类型的消息
+### 7.4 设计超时安全的数据库连接池
 要求：
-
-- 服务器可以监听多个端口，处理客户端的连接请求。
-- 采用事件驱动的方式处理网络事件，如连接建立、数据接收、数据发送等。
-- 支持异步 I/O 操作，提高服务器的并发性能。
-- 可以动态添加和删除监听端口。
-- 处理网络异常，如连接断开、超时等。
-
-### 7.5 设计一个线程池，支持任务的分组和优先级调度
-
+- 线程获取连接时最多等待500ms，超时返回错误
+- 连接空闲超过2分钟自动回收
+### 7.5 实现异步日志系统
 要求：
+- 所有日志写入请求异步执行
+- 当日志队列积压超过1000条时切换为同步模式
+- 支持刷盘操作等待所有待写日志完成
 
-- 线程池可以管理多个线程，执行提交的任务。
-- 任务可以分组，不同组的任务可以有不同的执行策略，如并行执行、顺序执行等。
-- 任务具有不同的优先级，高优先级的任务优先执行。
-- 支持动态调整线程池的大小。
-- 提供任务执行状态的查询接口，如任务是否完成、是否出错等。
+### 7.1 参考答案
+```cpp
+#include <iostream>
+#include <mutex>
+#include <future>
+#include <unordered_map>
 
-### 7.1 答案
+template<typename Key, typename Value>
+class SafeCache {
+    std::mutex mtx;
+    std::unordered_map<Key, Value> cache;
+    std::unordered_map<Key, std::shared_future<Value>> pending;
 
-### 7.2 答案
+    Value compute(const Key& key) {
+        // 模拟耗时计算
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+        return key + "_value";
+    }
 
-### 7.3 答案
+public:
+    Value get(const Key& key) {
+        std::unique_lock lock(mtx);
+        if (auto it = cache.find(key); it != cache.end()) {
+            return it->second;
+        }
 
-### 7.4 答案
+        if (auto it = pending.find(key); it != pending.end()) {
+            auto fut = it->second;
+            lock.unlock();
+            return fut.get();
+        }
 
-### 7.5 答案
+        auto promise = std::make_shared<std::promise<Value>>();
+        auto fut = promise->get_future().share();
+        pending.emplace(key, fut);
+
+        lock.unlock();
+
+        try  {
+            auto res = compute(key);
+            lock.lock();
+            cache.emplace(key, res);
+            pending.erase(key);
+            lock.unlock();
+            promise->set_value(res);
+        } catch (...) {
+            promise->set_exception(std::current_exception());
+        }
+
+        return fut.get();
+    }
+};
+
+// 测试用例
+void test_cache() {
+    SafeCache<std::string, std::string> cache;
+    auto task = [&](std::string key) {
+        return cache.get(key);
+    };
+
+    auto fut1 = std::async(std::launch::async, task, "A");
+    auto fut2 = std::async(std::launch::async, task, "A");
+    
+    std::cout << fut1.get() << std::endl; // A_value
+    std::cout << fut2.get() << std::endl; // A_value (仅一次计算)
+}
+
+int main() {
+    test_cache();
+    return 0;
+}
+/*
+分析:
+使用std:mutex保护缓存的访问，防止数据竟争。
+当键不存在时，为避免多个线程同时触发计算，使用互斥锁和条件变量来保证单个任务执行。可能需要存储计算中的键，防止重复计算。可以使用std::unordered_map存储键和对应的future，表示计算中的结果:
+步骤:
+1.定义缓存数据结构，包括互斥锁、存储键值对以及正在计算的键及其future。
+2.查询缓存时锁住互斥锁，若存在则直接返回值。
+3.如果键不存在且未被计算，则生成一个promise和future，存储到正在计算的map中，并启动异步任务计算结果
+4.其他线程查询同一键时，等待该键对应的future就绪。
+测试用例:
+多线程同时请求相同的键，确保只有一个计算任务执行
+验证缓存结果是否正确，避免重复计算。
+处理计算中的异常情况。
+*/
+
+```
+### 7.2 参考答案
+```cpp
+#include <iostream>
+#include <future>
+#include <atomic>
+#include <chrono>
+#include <functional>
+
+// 自定义可取消的任务包装类
+template <typename Result>
+class CancellableTask {
+public:
+    // 构造函数，接受一个可调用对象和一个取消标志
+    template <typename Func>
+    CancellableTask(Func func, std::shared_ptr<std::atomic<bool>> cancelFlag)
+        : cancelFlag_(cancelFlag) {
+        // 使用 std::async 异步执行任务
+        future_ = std::async(std::launch::async, [func, cancelFlag]() {
+            while (!cancelFlag->load()) {
+                // 执行任务函数
+                Result result = func();
+                return result;
+            }
+            // 如果任务被取消，抛出异常
+            throw std::runtime_error("Task cancelled");
+        });
+    }
+
+    // 获取任务的 future 对象
+    std::future<Result> get_future() {
+        return std::move(future_);
+    }
+
+    // 取消任务
+    void cancel() {
+        cancelFlag_->store(true);
+    }
+
+private:
+    std::future<Result> future_;
+    std::shared_ptr<std::atomic<bool>> cancelFlag_;
+};
+
+// 示例任务函数
+int exampleTask() {
+    for (int i = 0; i < 5; ++i) {
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+        std::cout << "Task is working: " << i << std::endl;
+    }
+    return 42;
+}
+
+int main() {
+    // 创建一个共享的原子布尔变量作为取消标志
+    auto cancelFlag = std::make_shared<std::atomic<bool>>(false);
+    // 创建可取消的任务
+    CancellableTask<int> task(exampleTask, cancelFlag);
+    // 获取任务的 future 对象
+    auto future = task.get_future();
+
+    // 模拟一段时间后取消任务
+    std::this_thread::sleep_for(std::chrono::seconds(2));
+    std::cout << "Cancelling the task..." << std::endl;
+    task.cancel();
+
+    try {
+        // 尝试获取任务的结果
+        int result = future.get();
+        std::cout << "Task result: " << result << std::endl;
+    } catch (const std::runtime_error& e) {
+        std::cout << "Exception caught: " << e.what() << std::endl;
+    }
+
+    return 0;
+}
+
+```
+### 7.3 参考答案
+```cpp
+#include <iostream>
+#include <vector>
+#include <queue>
+#include <thread>
+#include <mutex>
+#include <condition_variable>
+#include <algorithm>
+#include <chrono>
+
+// 定义消息类型
+const int PRIORITY_MESSAGE_TYPE = 1;
+
+// 有界缓冲区类
+template<typename T>
+class BoundedBuffer {
+private:
+    std::vector<T> buffer;
+    std::mutex mtx;
+    std::condition_variable not_full;
+    std::condition_variable not_empty;
+    size_t capacity;
+
+public:
+    BoundedBuffer(size_t cap) : capacity(cap) {}
+
+    // 生产者向缓冲区添加消息
+    void enqueue(const T& item) {
+        std::unique_lock<std::mutex> lock(mtx);
+        // 等待缓冲区有空间
+        not_full.wait(lock, [this] { return buffer.size() < capacity; });
+        buffer.push_back(item);
+        // 通知消费者缓冲区有新消息
+        not_empty.notify_one();
+    }
+
+    // 消费者从缓冲区取出消息，优先处理特定类型的消息
+    T dequeue() {
+        std::unique_lock<std::mutex> lock(mtx);
+        // 等待缓冲区有消息
+        not_empty.wait(lock, [this] { return!buffer.empty(); });
+
+        // 优先查找特定类型的消息
+        auto it = std::find_if(buffer.begin(), buffer.end(), [](const T& msg) {
+            return std::get<1>(msg) == PRIORITY_MESSAGE_TYPE;
+        });
+
+        T item;
+        if (it != buffer.end()) {
+            item = *it;
+            buffer.erase(it);
+        } else {
+            item = buffer.front();
+            buffer.erase(buffer.begin());
+        }
+
+        // 通知生产者缓冲区有空间
+        not_full.notify_one();
+        return item;
+    }
+};
+
+// 生产者函数
+void producer(BoundedBuffer<std::pair<int, int>>& buffer, int id) {
+    for (int i = 0; i < 5; ++i) {
+        int messageType = (i % 2 == 0)? PRIORITY_MESSAGE_TYPE : 2;
+        buffer.enqueue({id * 10 + i, messageType});
+        std::cout << "Producer " << id << " produced message " << id * 10 + i << " of type " << messageType << std::endl;
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+}
+
+// 消费者函数
+void consumer(BoundedBuffer<std::pair<int, int>>& buffer, int id) {
+    for (int i = 0; i < 5; ++i) {
+        auto [messageId, messageType] = buffer.dequeue();
+        std::cout << "Consumer " << id << " consumed message " << messageId << " of type " << messageType << std::endl;
+        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+    }
+}
+
+int main() {
+    const int bufferCapacity = 10;
+    BoundedBuffer<std::pair<int, int>> buffer(bufferCapacity);
+
+    const int numProducers = 3;
+    const int numConsumers = 2;
+
+    std::vector<std::thread> producers;
+    std::vector<std::thread> consumers;
+
+    // 创建生产者线程
+    for (int i = 0; i < numProducers; ++i) {
+        producers.emplace_back(producer, std::ref(buffer), i);
+    }
+
+    // 创建消费者线程
+    for (int i = 0; i < numConsumers; ++i) {
+        consumers.emplace_back(consumer, std::ref(buffer), i);
+    }
+
+    // 等待生产者线程结束
+    for (auto& p : producers) {
+        p.join();
+    }
+
+    // 等待消费者线程结束
+    for (auto& c : consumers) {
+        c.join();
+    }
+
+    return 0;
+}
+```
+
+### 7.4 参考答案
+```cpp
+#include <iostream>
+#include <queue>
+#include <thread>
+#include <mutex>
+#include <condition_variable>
+#include <chrono>
+#include <vector>
+
+// 模拟数据库连接类
+class DatabaseConnection {
+public:
+    DatabaseConnection() {
+        std::cout << "Database connection created." << std::endl;
+    }
+
+    ~DatabaseConnection() {
+        std::cout << "Database connection destroyed." << std::endl;
+    }
+
+    void executeQuery(const std::string& query) {
+        std::cout << "Executing query: " << query << std::endl;
+    }
+};
+
+// 数据库连接池类
+class DatabaseConnectionPool {
+private:
+    std::queue<DatabaseConnection*> connections;
+    std::mutex mtx;
+    std::condition_variable cv;
+    size_t maxConnections;
+    std::chrono::time_point<std::chrono::steady_clock> lastUsed;
+
+    // 自动回收线程函数
+    void autoReclaim() {
+        while (true) {
+            std::this_thread::sleep_for(std::chrono::minutes(1)); // 每分钟检查一次
+            {
+                std::unique_lock<std::mutex> lock(mtx);
+                auto now = std::chrono::steady_clock::now();
+                while (!connections.empty()) {
+                    auto connection = connections.front();
+                    auto idleTime = std::chrono::duration_cast<std::chrono::minutes>(now - lastUsed);
+                    if (idleTime.count() >= 2) {
+                        connections.pop();
+                        delete connection;
+                    } else {
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+public:
+    DatabaseConnectionPool(size_t maxConns) : maxConnections(maxConns) {
+        for (size_t i = 0; i < maxConns; ++i) {
+            connections.push(new DatabaseConnection());
+        }
+        lastUsed = std::chrono::steady_clock::now();
+        std::thread(&DatabaseConnectionPool::autoReclaim, this).detach();
+    }
+
+    ~DatabaseConnectionPool() {
+        std::unique_lock<std::mutex> lock(mtx);
+        while (!connections.empty()) {
+            delete connections.front();
+            connections.pop();
+        }
+    }
+
+    // 获取数据库连接
+    DatabaseConnection* getConnection() {
+        std::unique_lock<std::mutex> lock(mtx);
+        if (cv.wait_for(lock, std::chrono::milliseconds(500), [this] { return!connections.empty(); })) {
+            auto connection = connections.front();
+            connections.pop();
+            lastUsed = std::chrono::steady_clock::now();
+            return connection;
+        }
+        return nullptr; // 超时返回 nullptr
+    }
+
+    // 释放数据库连接
+    void releaseConnection(DatabaseConnection* connection) {
+        std::unique_lock<std::mutex> lock(mtx);
+        connections.push(connection);
+        lastUsed = std::chrono::steady_clock::now();
+        cv.notify_one();
+    }
+};
+
+// 测试用例
+void testConnectionPool() {
+    DatabaseConnectionPool pool(3);
+
+    auto task = [&pool]() {
+        DatabaseConnection* conn = pool.getConnection();
+        if (conn) {
+            conn->executeQuery("SELECT * FROM users");
+            pool.releaseConnection(conn);
+        } else {
+            std::cout << "Failed to get a connection (timeout)." << std::endl;
+        }
+    };
+
+    std::vector<std::thread> threads;
+    for (int i = 0; i < 5; ++i) {
+        threads.emplace_back(task);
+    }
+
+    for (auto& t : threads) {
+        t.join();
+    }
+}
+
+int main() {
+    testConnectionPool();
+    return 0;
+}
+```
+### 7.5 参考答案
+```cpp
+#include <iostream>
+#include <fstream>
+#include <queue>
+#include <thread>
+#include <mutex>
+#include <condition_variable>
+#include <string>
+#include <chrono>
+#include <atomic>
+#include <vector>
+
+// 定义日志级别
+enum class LogLevel {
+    DEBUG,
+    INFO,
+    WARN,
+    ERROR
+};
+
+class AsyncLogger {
+private:
+    std::queue<std::string> logQueue;
+    std::mutex mtx;
+    std::condition_variable cv;
+    std::ofstream logFile;
+    std::thread loggerThread;
+    std::atomic<bool> stopLogging;
+    std::atomic<bool> isSyncMode;
+    static constexpr size_t MAX_QUEUE_SIZE = 1000;
+
+    // 日志线程函数
+    void logger() {
+        std::vector<std::string> buffer;
+        while (!stopLogging) {
+            {
+                std::unique_lock<std::mutex> lock(mtx);
+                cv.wait_for(lock, std::chrono::milliseconds(100), [this] { return!logQueue.empty() || stopLogging; });
+                while (!logQueue.empty()) {
+                    buffer.push_back(std::move(logQueue.front()));
+                    logQueue.pop();
+                }
+            }
+            for (const auto& msg : buffer) {
+                try {
+                    logFile << msg << std::endl;
+                } catch (const std::exception& e) {
+                    std::cerr << "Error writing log: " << e.what() << std::endl;
+                }
+            }
+            buffer.clear();
+        }
+        // 处理剩余的日志
+        {
+            std::unique_lock<std::mutex> lock(mtx);
+            while (!logQueue.empty()) {
+                try {
+                    logFile << logQueue.front() << std::endl;
+                    logQueue.pop();
+                } catch (const std::exception& e) {
+                    std::cerr << "Error writing remaining log: " << e.what() << std::endl;
+                }
+            }
+        }
+        try {
+            logFile.flush();
+        } catch (const std::exception& e) {
+            std::cerr << "Error flushing log file: " << e.what() << std::endl;
+        }
+    }
+
+    // 格式化日志消息，添加日志级别和时间戳
+    std::string formatLogMessage(LogLevel level, const std::string& message) {
+        auto now = std::chrono::system_clock::now();
+        std::time_t currentTime = std::chrono::system_clock::to_time_t(now);
+        std::string timeStr = std::ctime(&currentTime);
+        timeStr.pop_back(); // 去掉换行符
+        std::string levelStr;
+        switch (level) {
+            case LogLevel::DEBUG:
+                levelStr = "DEBUG";
+                break;
+            case LogLevel::INFO:
+                levelStr = "INFO";
+                break;
+            case LogLevel::WARN:
+                levelStr = "WARN";
+                break;
+            case LogLevel::ERROR:
+                levelStr = "ERROR";
+                break;
+        }
+        return "[" + timeStr + "] [" + levelStr + "] " + message;
+    }
+
+public:
+    AsyncLogger(const std::string& logFileName) : stopLogging(false), isSyncMode(false) {
+        try {
+            logFile.open(logFileName, std::ios::app);
+            if (!logFile.is_open()) {
+                std::cerr << "Failed to open log file: " << logFileName << std::endl;
+            }
+        } catch (const std::exception& e) {
+            std::cerr << "Error opening log file: " << e.what() << std::endl;
+        }
+        loggerThread = std::thread(&AsyncLogger::logger, this);
+    }
+
+    ~AsyncLogger() {
+        stopLogging = true;
+        cv.notify_one();
+        if (loggerThread.joinable()) {
+            loggerThread.join();
+        }
+        try {
+            logFile.close();
+        } catch (const std::exception& e) {
+            std::cerr << "Error closing log file: " << e.what() << std::endl;
+        }
+    }
+
+    // 写入日志
+    void log(LogLevel level, const std::string& message) {
+        std::string formattedMessage = formatLogMessage(level, message);
+        {
+            std::unique_lock<std::mutex> lock(mtx);
+            if (logQueue.size() >= MAX_QUEUE_SIZE) {
+                isSyncMode = true;
+            } else {
+                isSyncMode = false;
+            }
+        }
+
+        if (isSyncMode) {
+            // 同步模式，直接写入日志
+            std::lock_guard<std::mutex> lock(mtx);
+            try {
+                logFile << formattedMessage << std::endl;
+                logFile.flush();
+            } catch (const std::exception& e) {
+                std::cerr << "Error writing log in sync mode: " << e.what() << std::endl;
+            }
+        } else {
+            // 异步模式，将日志消息放入队列
+            {
+                std::lock_guard<std::mutex> lock(mtx);
+                logQueue.push(formattedMessage);
+            }
+            cv.notify_one();
+        }
+    }
+
+    // 刷盘操作
+    void flush() {
+        std::unique_lock<std::mutex> lock(mtx);
+        while (!logQueue.empty()) {
+            cv.wait(lock, [this] { return logQueue.empty(); });
+        }
+        try {
+            logFile.flush();
+        } catch (const std::exception& e) {
+            std::cerr << "Error flushing log during flush operation: " << e.what() << std::endl;
+        }
+    }
+};
+
+// 测试用例
+void testAsyncLogger() {
+    AsyncLogger logger("test.log");
+
+    // 模拟大量日志写入
+    for (int i = 0; i < 2000; ++i) {
+        logger.log(LogLevel::INFO, "Log message " + std::to_string(i));
+        std::cout << "Log message " << i << std::endl;  // 输出到控制台
+    }
+
+    // 刷盘操作
+    logger.flush();
+}
+
+int main() {
+    testAsyncLogger();
+    return 0;
+}
+```
