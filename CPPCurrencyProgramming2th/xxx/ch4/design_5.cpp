@@ -162,16 +162,16 @@ public:
 
     // 刷盘操作
     void flush() {
-    std::unique_lock<std::mutex> lock(mtx);
-    cv.wait(lock, [this] { return logQueue.empty(); });
-    try {
-        if (logFile.is_open()) {
-            logFile.flush();
+        std::unique_lock<std::mutex> lock(mtx);
+        cv.wait(lock, [this] { return logQueue.empty(); });
+        try {
+            if (logFile.is_open()) {
+                logFile.flush();
+            }
+        } catch (const std::exception& e) {
+            std::cerr << "Error flushing log during flush operation: " << e.what() << std::endl;
         }
-    } catch (const std::exception& e) {
-        std::cerr << "Error flushing log during flush operation: " << e.what() << std::endl;
     }
-}
 };
 
 // 测试用例
