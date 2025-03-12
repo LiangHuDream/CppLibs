@@ -35,20 +35,19 @@ private:
     const size_t capacity;
 
     // Helper function to perform CAS operation
-    bool cas(Node*& expected, Node* desired, std::atomic<Node*>& target) {
+    bool cas(Node*& expected, Node* desired, std::atomic<Node*>& target) { // Node*&是什么用法
         return target.compare_exchange_strong(expected, desired);
     }
 
 public:
-    LockFreeQueue(size_t cap) : capacity(cap), size(0) {
-        Node* dummy = new Node(T());
-        head = tail = dummy;
-    }
+    LockFreeQueue(size_t cap)
+        : capacity(cap), size(0), head(new Node(T())), tail(head.load()) {}
 
     ~LockFreeQueue() {
         T temp;
         while (dequeue(temp));
-        delete head.load();
+        Node* headNode = head.load();
+        delete headNode;
     }
 
     bool enqueue(const T& value) {
@@ -60,16 +59,16 @@ public:
         Node* newNode = new Node(value);
         while (true) {
             Node* oldTail = tail.load(std::memory_order_acquire);
-            Node* next = oldTail->next.load(std::memory_order_relaxed);
             if (oldTail == tail.load(std::memory_order_acquire)) {
+                Node* next = oldTail->next.load(std::memory_order_relaxed);
                 if (next == nullptr) {
-                    if (cas(next, newNode, oldTail->next)) {
-                        cas(oldTail, newNode, tail);
-                        size.fetch_add(1, std::memory_order_relaxed);
+                    if (oldTail->next.compare_exchange_strong(next, newNode)) {
+                        tail.compare_exchange_strong(oldTail, newNode);
+                        size.fetch_add(1, std::memory_order_release);
                         return true;
                     }
                 } else {
-                    cas(oldTail, next, tail);
+                    tail.compare_exchange_strong(oldTail, next);
                 }
             }
         }
