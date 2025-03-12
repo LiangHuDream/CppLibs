@@ -69,7 +69,7 @@ public:
     // 获取数据库连接
     std::unique_ptr<DatabaseConnection> getConnection() {
         std::unique_lock<std::mutex> lock(mtx);
-        if (cv.wait_for(lock, std::chrono::milliseconds(500), [this] { return!connections.empty(); })) {
+        if (cv.wait_for(lock, std::chrono::milliseconds(500), [this] { return !connections.empty(); })) {
             auto connection = std::move(connections.front());
             connections.pop();
             lastUsed = std::chrono::steady_clock::now();
