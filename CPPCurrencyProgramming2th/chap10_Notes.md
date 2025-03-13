@@ -1,12 +1,11 @@
 @[TOC](并行算法)
 ## 1. 核心知识点
-1. 执行策略（Execution Policies）
+1. **执行策略**（Execution Policies）
 C++17引入的执行策略允许开发者指定算法的并行方式，主要分为三类：
-
 std::execution::seq：顺序执行（无并行）
 std::execution::par：多线程并行
 std::execution::par_unseq：允许向量化指令和跨线程交错执行的并行
-**关键点**：
+ 2. **关键点**：
 选择par时需保证操作是线程安全的。
 par_unseq需函数无数据竞争且可向量化。
 不支持并行执行的算法默认会退化为顺序执行。
@@ -220,7 +219,8 @@ int main() {
 2. 选择合适的执行策略：
 - par适用于CPU密集型任务。
 - par_unseq适合SIMD指令优化的场景（如数值计算）。
-## 7. 多选题目
+## 7. 多选题
+### 7.1 题目
 1. 下列关于C++17执行策略的说法错误的是：
 A. std::execution::seq 保证算法完全顺序执行，等同于传统非并行版本。  
 B. std::execution::par 允许在多个线程中并行执行，但同一线程内的操作必须顺序执行。  
@@ -240,17 +240,16 @@ C. std::execution::par策略的并行算法中，一旦某个元素抛出异常�
 D. 只有seq策略支持异常传播。  
 
 4. 下列代码的潜在问题是：
-```cpp
-std::vector<int> vec(1000, 1);
-int sum = 0;
-std::for_each(std::execution::par, vec.begin(), vec.end(), 
-    [&](int x) { sum += x; });
-```
-
-A. 性能不如串行版本。
-B. 会导致数据竞争。
-C. 可以正确累加求和。
-D. 违反了par_unseq的内存访问规则。
+	```cpp
+	std::vector<int> vec(1000, 1);
+	int sum = 0;
+	std::for_each(std::execution::par, vec.begin(), vec.end(), 
+	    [&](int x) { sum += x; });
+	```
+	A. 性能不如串行版本。
+   B. 会导致数据竞争。
+   C. 可以正确累加求和。
+   D. 违反了par_unseq的内存访问规则。
 
 5. 关于自定义并行任务的设计，正确的说法是：
 A. 可以通过继承std::thread实现更灵活的线程池。
@@ -258,6 +257,7 @@ B. 与标准库并行算法相比，手动线程池在任务分配上更高效�
 C. C++17的并行算法必须依赖std::execution策略，无法扩展。
 D. std::async的异步策略可以替代并行算法的所有功能。
 
+### 7.2 多选答案
 1. 答案：B
 解析：std::execution::par允许跨线程并行，同一线程内的操作可能被调度打断（如任务窃取），不保证顺序。par_unseq还要考虑向量化的无序执行（例如SIMD指令），D正确（因par_unseq要求无锁）。
 
