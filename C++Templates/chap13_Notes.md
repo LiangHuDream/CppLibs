@@ -1,480 +1,583 @@
-@[TOC](C++20 Modules)
-
-Focus Areas: Module declarations, partitions, interface/implementation units, and compatibility with legacy code.
+@[TOC](Names in Templates)
 
 ---
 
-### Key Concepts & Code Explanations
+### 重难点
 
-#### 1. Problems with Traditional Headers
+**1. 名称分类与基本概念**
+知识点：
+- **限定名（Qualified Name）**：使用`::`或`.`显式指定作用域的名称（如`std::vector`）
+- **非限定名（Unqualified Name）**：不带作用域限定的名称（如`vector`）
+- **依赖名（Dependent Name）**：依赖于模板参数的名称（如`T::value_type`）
+- **非依赖名（Non-dependent Name）**：不依赖模板参数的名称（如`int`）
 
-Why Modules?: Headers cause slow compilation (reparsing), macros leaking, and ODR violations. Modules encapsulate code and reduce dependencies.
-
-#### 2. Basic Module Structure
-
-Example: A module `math` exporting functions.
-
+测试用例：
 ```cpp
-// math.ixx (module interface)  
-export module math;  
+#include <iostream>
+#include <vector>
 
-export namespace math {  
-    int add(int a, int b) { return a + b; }  
-    double sqrt(double x); // Declaration only  
-}  
+template<typename T>
+void foo() {
+    T::value_type x;  // 依赖名（T未实例化前无法确定是否合法）
+}
 
-// math_impl.ixx (module implementation)  
-module math;  
-export double math::sqrt(double x) { /* ... */ }  
+int main() {
+    foo<std::vector<int>>();  // 实例化时检查T::value_type合法性
+    return 0;
+}
 ```
 
-Test Case:
+---
 
+**2. 依赖名与非依赖名的查找规则**
+知识点：
+- **非限定名查找**：
+  - 普通查找（Ordinary Lookup）：在模板定义时查找所有可见的非依赖名
+  - ADL（Argument-Dependent Lookup）：在模板实例化时查找关联命名空间
+- **限定名查找**：
+  - 直接在当前作用域链中查找，不触发ADL
+
+示例代码：
 ```cpp
-// main.cpp  
-import math;  
+namespace NS {
+    struct S {};
+    void bar(S) { std::cout << "NS::bar\n"; }
+}
 
-int main() {  
-    math::add(3, 4); // OK  
-    math::sqrt(2.0); // OK  
-}  
+template<typename T>
+void baz(T t) {
+    bar(t);  // 非限定名：普通查找+ADL
+}
+
+int main() {
+    NS::S s;
+    baz(s);  // 调用NS::bar（通过ADL）
+    return 0;
+}
 ```
 
 ---
 
-#### 3. Module Partitions
+**3. 注入类名（Injected Class Name）**
+知识点：
+- 类模板内部可以隐式使用类名作为模板名（无需`<T>`）
+- 在派生类中可通过`Base::Base`访问基类模板
 
-Use Case: Split large modules into logical partitions.
-
+示例代码：
 ```cpp
-// math-core.ixx (partition interface)  
-export module math:core;  
-export int multiply(int a, int b) { return a * b; }  
+#include <iostream>
 
-// math-advanced.ixx (partition interface)  
-export module math:advanced;  
-export double exp(double x);  
+// 基类模板 Base
+template<typename T>
+class Base {
+public:
+    // 定义一个类型别名 type，其类型为模板参数 T
+    using type = T;
+};
 
-// math.ixx (primary interface)  
-export module math;  
-export import :core;  
-export import :advanced;  
+// 派生类模板 Derived，继承自 Base<T>
+template<typename T>
+class Derived : public Base<T> {
+public:
+    // 派生类的构造函数
+    Derived() {
+        // 显式使用完整的基类模板实例化形式
+        typename Base<T>::type x;
+        // 为了让代码更完整，我们可以给 x 赋值并输出
+        x = static_cast<T>(10);
+        std::cout << "Value of x: " << x << std::endl;
+    }
+};
+
+int main() {
+    // 实例化 Derived 类模板，模板参数为 int
+    Derived<int> d;
+    return 0;
+}    
 ```
 
-Test Case:
+---
 
+**4. 友元模板（Friend Templates）**
+知识点：
+- 友元可以是函数模板、类模板或成员模板
+- 友元声明需在类外定义时显式指定模板参数
+
+示例代码：
 ```cpp
-import math;  
-int main() {  
-    multiply(3, 4); // From core partition  
-    exp(2.0);      // From advanced partition  
-}  
+template<typename T>
+class MyClass {
+    friend void helper<>(MyClass<T>&);  // 友元函数模板
+};
+
+template<typename T>
+void helper(MyClass<T>& obj) {
+    obj.value = 42;
+}
+
+int main() {
+    MyClass<int> obj;
+    helper(obj);
+    return 0;
+}
 ```
 
 ---
 
-#### 4. Legacy Header Compatibility
+**5. 两阶段查找（Two-Phase Lookup）**
+知识点：
+- **第一阶段（定义时）**：检查非依赖名，忽略模板参数
+- **第二阶段（实例化时）**：检查依赖名，触发ADL
 
-Global Module Fragment: Include headers before module declarations.
-
+常见陷阱示例：
 ```cpp
-// legacy.ixx  
-module;  
-#include <vector> // Legacy header  
-export module legacy;  
+template<typename T>
+void foo() {
+    bar();  // 第一阶段查找bar，若未找到则报错
+}
 
-export template<typename T>  
-void process(const std::vector<T>& vec) { /* ... */ }  
+namespace NS {
+    void bar() {}
+}
+
+int main() {
+    foo<NS::Bar>();  // 错误！第一阶段未找到bar()
+    return 0;
+}
 ```
 
-Test Case:
+---
 
+**6. 代码测试与调试技巧**
+测试策略：
+1. **分阶段编译**：先编译模板定义，再实例化观察错误
+2. **显式实例化**：通过`template class MyClass<int>;`强制实例化
+3. **使用`static_assert`**：在模板中添加静态断言验证条件
+
+示例测试代码：
 ```cpp
-import legacy;  
-int main() {  
-    std::vector<int> vec = {1, 2, 3};  
-    process(vec);  
-}  
+template<typename T>
+class MyClass {
+    static_assert(std::is_integral_v<T>, "T must be integral");
+};
+
+int main() {
+    MyClass<int> ok;       // 通过
+    // MyClass<double> error;  // 编译失败（静态断言）
+    return 0;
+}
 ```
 
 ---
 
-### 10 Hard Multiple-Choice Questions
+### 多选题
 
-#### Questions 1-5
+题目1
+**关于依赖名称的查找规则，以下哪些说法正确？**
+A. 非限定依赖名称在第二阶段通过ADL查找  
+B. 限定依赖名称直接在第一阶段查找  
+C. 成员模板中的依赖名称自动视为模板  
+D. `typename`关键字只能用于非限定依赖名称前
 
-1. What is the primary benefit of modules over headers?
-    A) Faster runtime
-    B) Faster compilation
-    C) Smaller binaries
-    D) Better exception safety
-2. Which keyword exports a module’s interface? 
-    A) `export`
-    B) `import`
-    C) `module`
-    D) `namespace`
-3. What is the file extension for module interfaces in MSVC?
-    A) `.cpp`
-    B) `.hpp`
-    C) `.ixx`
-    D) `.module`
-4. Which code correctly imports a module?
-   A) `#include <math>`
-   B) `import math;`
-   C) `using namespace math;`
-   D) `export import math;`
-5. What is a module partition?
-    A) A way to split modules across files
-    B) A deprecated feature
-    C) A type of namespace
-    D) A build system flag
+**答案**  
+A, C  
+**详解**  
+A正确：非限定依赖名称在第二阶段通过ADL查找  
+C正确：成员模板中的依赖名称需用`template`关键字显式指明
+
+题目2
+**关于ADL的适用场景，以下哪些是正确的？**
+A. 查找非成员函数时参数类型所属的命名空间  
+B. 查找成员函数的基类链  
+C. 查找模板参数类型的嵌套类型  
+D. 查找全局作用域的函数
+
+**答案**  
+A, C  
+**详解**  
+A正确：ADL通过参数类型所属命名空间查找函数  
+C正确：ADL会查找参数类型的嵌套类型
+
+题目3
+**关于注入类名称，以下哪些描述正确？**
+A. 在类模板内部可直接使用未限定类名  
+B. 注入名称优先于外部同名函数  
+C. 可用于访问基类的成员  
+D. 实例化后指向具体模板实例
+
+**答案**  
+A, D  
+**详解**  
+A正确：类模板内部可直接用`MyClass`代替`MyClass<T>`  
+D正确：注入名称在实例化后指向具体实例类型
+
+题目4
+**关于名称查找阶段，以下哪些正确？**
+A. 非依赖名称仅在第一阶段查找  
+B. 依赖名称仅在第二阶段查找  
+C. 友元声明影响第二阶段查找  
+D. `using`声明影响第一阶段查找
+
+**答案**  
+A, D  
+**详解**  
+A正确：非限定非依赖名称在第一阶段完成查找  
+D正确：`using`声明会向第一阶段作用域引入名称
+
+题目5
+**关于模板参数作用域，以下哪些正确？**
+A. 模板参数作用域从声明处开始  
+B. 模板参数可隐藏外层作用域名称  
+C. 类模板参数作用域包含成员定义  
+D. 函数模板参数作用域包含默认实参
+
+**答案**  
+A, B, C  
+**详解**  
+A正确：模板参数作用域起始于声明处  
+B正确：模板参数会隐藏外层同名名称  
+C正确：类模板参数作用域覆盖成员定义
+
+题目6
+**关于友元声明的名称查找，以下哪些正确？**
+A. 友元函数声明影响普通名称查找  
+B. 友元类声明参与ADL查找  
+C. 显式友元模板影响第二阶段查找  
+D. 友元声明必须在使用前可见
+
+**答案**  
+B, C  
+**详解**  
+B正确：友元类参与ADL查找路径  
+C正确：显式友元模板在第二阶段被考虑
+
+题目7
+**关于`using`声明在模板中的作用，以下哪些正确？**
+A. 引入命名空间成员到模板作用域  
+B. 可用于解除名称隐藏  
+C. 必须在模板定义体外声明  
+D. 影响第一阶段名称查找
+
+**答案**  
+A, B, D  
+**详解**  
+A正确：`using`可将命名空间成员引入当前作用域  
+B正确：可解除外层同名名称的隐藏  
+D正确：`using`声明影响第一阶段的普通查找
+
+题目8
+**关于当前实例化的判断，以下哪些情况成立？**
+A. 直接使用未限定的类模板名  
+B. 访问成员模板的嵌套类型  
+C. 使用`this->`限定成员访问  
+D. 通过`typename`限定依赖类型
+
+**答案**  
+A, B  
+**详解**  
+A正确：直接使用类模板名指向当前实例  
+B正确：成员模板的嵌套类型属于当前实例
+
+题目9
+**关于两阶段查找的例外，以下哪些正确？**
+A. 非类型模板参数的默认实参在第二阶段处理  
+B. 虚函数表在第二阶段初始化  
+C. 默认成员初始化器在第一阶段处理  
+D. 异常规格不在两阶段处理范围内
+
+**答案**  
+C, D  
+**详解**  
+C正确：默认成员初始化器在第一阶段处理  
+D正确：异常规格不属于两阶段处理范围
+
+题目10
+**关于模板特化与名称查找的关系，以下哪些正确？**
+A. 显式特化不影响第一阶段查找  
+B. 偏特化参与第二阶段ADL查找  
+C. 全局特化优先于隐式实例化  
+D. 特化中的名称独立于主模板作用域
+
+**答案**  
+A, C  
+**详解**  
+A正确：显式特化仅在实例化时被选择  
+C正确：显式全局特化优先于隐式实例化
 
 ---
 
-#### Questions 6-10
+### 设计题
 
-6. Which code is valid in the global module fragment?
-    A) `export module math;`
-    B) `#include <vector>`
-    C) `import std.core;`
-    D) `export int add(int a, int b);`
-7. What is the purpose of `export import`?
-    A) Re-export a module’s interface
-    B) Hide a module’s implementation
-    C) Link to legacy code
-    D) Disable macros
-8. Which statement about module partitions is true?
-   A) Partitions can be imported independently
-   B) Partitions must have unique names across modules
-   C) Partitions replace namespaces
-   D) Partitions are declared with `module math.partition;`
-9. What happens if a module interface includes `using namespace std;`?
-    A) `std` is exported to users
-    B) `std` is hidden from users
-    C) Compile error
-    D) UB
-10. Which code mixes modules and headers safely?
-    A)
+**题目1**
+**设计一个模板类`Logger`，要求：**
+- 支持日志级别（DEBUG/INFO/WARNING）
+- 使用ADL查找自定义日志处理器
+- 提供默认处理器输出到`std::cout`
+- 测试用例需验证ADL查找和默认行为
 
-    ```cpp
-    module;  
-    #include <vector>  
-    export module data;  
-    ```
-
-    B)
-
-    ```cpp
-    import <vector>;  
-    export module data;  
-    ```
-
-    C)
-
-    ```cpp
-    export module data;  
-    #include <vector>  
-    ```
-
-    D)
-
-    ```cpp
-    export module data;  
-    import std.vector;  
-    ```
-
----
-
-### 1-10 Answers & Explanations
-
-1. B (Modules reduce redundant parsing).
-2. A (`export` exposes entities).
-3. C (`.ixx` in MSVC).
-4. B (`import math;`).
-5. A (Partitions split modules into files).
-6. B (Global fragment allows `#include`).
-7. A (`export import` re-exports dependencies).
-8. B (Partition names must be unique within a module).
-9. A (Exported declarations leak `std`).
-10. A (Global fragment includes headers safely).
-
----
-
-### 10 Hard Design Questions
-
-#### Question 1: Module for a Math Library
-
-Task: Design a module `math` exporting `add`, `subtract`, and `PI`.
-
+**答案**  
 ```cpp
-// math.ixx  
-export module math;  
+#include <iostream>
+#include <string>
 
-export namespace math {  
-    constexpr double PI = 3.14159;  
-    int add(int a, int b) { return a + b; }  
-    int subtract(int a, int b) { return a - b; }  
-}  
+// 主模板
+template<typename T>
+class Logger {
+public:
+    void log(const std::string& msg) {
+        handle_log(msg); // ADL查找自定义处理器
+    }
+};
+
+// 默认处理器（通过ADL查找）
+void handle_log(const std::string& msg) {
+    std::cout << "[DEFAULT] " << msg << std::endl;
+}
+
+// 自定义处理器示例
+namespace CustomLog {
+    struct Handler {
+        static void handle(const std::string& msg) {
+            std::cerr << "[CUSTOM] " << msg << std::endl;
+        }
+    };
+
+    // ADL辅助函数
+    void handle_log(const std::string& msg) {
+        Handler::handle(msg);
+    }
+}
+
+// 测试用例
+int main() {
+    Logger<int> logger1;
+    logger1.log("Hello"); // 调用默认处理器
+    
+    Logger<CustomLog::Handler> logger2;
+    logger2.log("World"); // 调用自定义处理器
+    
+    return 0;
+}
 ```
 
-Test Case:
+**题目2**
+**实现一个依赖名称查找的智能指针模板，要求：**
+- 支持自定义删除器
+- 删除器通过依赖名称查找
+- 默认删除器使用`delete`
+- 测试用例需验证自定义删除器和默认行为
 
+**答案**  
 ```cpp
-import math;  
-int main() {  
-    math::add(10, math::subtract(5, 3)); // 10 + (5-3) = 12  
-}  
+template<typename T, typename Deleter = void>
+class SmartPtr {
+    T* ptr;
+public:
+    SmartPtr(T* p) : ptr(p) {}
+    
+    ~SmartPtr() {
+        delete_ptr(ptr); // 依赖名称查找
+    }
+    
+private:
+    // 依赖名称：通过ADL查找Deleter::delete_ptr
+    void delete_ptr(T* p) {
+        Deleter::delete_ptr(p);
+    }
+};
+
+// 默认删除器
+struct DefaultDeleter {
+    static void delete_ptr(void* p) {
+        ::delete static_cast<int*>(p);
+    }
+};
+
+// 自定义删除器
+struct FileDeleter {
+    static void delete_ptr(FILE* p) {
+        fclose(p);
+    }
+};
+
+// 测试用例
+int main() {
+    SmartPtr<int> ptr1(new int(42)); // 使用默认删除器
+    SmartPtr<FILE, FileDeleter> ptr2(fopen("test.txt", "w")); // 使用自定义删除器
+    
+    return 0;
+}
 ```
 
----
+**题目3**
+**设计一个支持注入类名称的模板元编程工具，要求：**
+- 提供类型特征检测接口
+- 注入类名称简化成员访问
+- 测试用例验证注入名称和普通成员访问一致性
 
-#### Question 2: Module Partition for Logging
-
-Task: Split a module `logger` into core (`:core`) and file I/O (`:file`) partitions.
-
+**答案**  
 ```cpp
-// logger-core.ixx  
-export module logger:core;  
-export void log(const std::string& msg);  
+template<typename T>
+struct TypeTraits {
+    // 注入类名称简化成员访问
+    using value_type = typename T::value_type;
+    using iterator = typename T::iterator;
+    
+    static constexpr bool has_size = requires(T t) {
+        { t.size() } -> std::convertible_to<std::size_t>;
+    };
+};
 
-// logger-file.ixx  
-export module logger:file;  
-import :core;  
-export void logToFile(const std::string& msg);  
+// 测试容器
+template<typename T>
+struct MyContainer {
+    using value_type = T;
+    using iterator = T*;
+    
+    std::size_t size() const { return 0; }
+};
 
-// logger.ixx  
-export module logger;  
-export import :core;  
-export import :file;  
+// 测试用例
+int main() {
+    static_assert(TypeTraits<MyContainer<int>>::has_size);
+    static_assert(std::is_same_v<TypeTraits<MyContainer<int>>::value_type, int>);
+    
+    return 0;
+}
 ```
 
-Test Case:
+**题目4**
+**实现一个支持当前实例化的模板偏特化检测器，要求：**
+- 判断给定类型是否为当前实例化
+- 使用`this->`限定成员访问
+- 测试用例验证检测逻辑
 
+**答案**  
 ```cpp
-import logger;  
-int main() {  
-    log("Hello");  
-    logToFile("Debug");  
-}  
+template<typename T>
+struct IsCurrentInstantiation {
+    static constexpr bool value = false;
+};
+
+template<typename T>
+struct MyClass {
+    template<typename U>
+    struct Inner {
+        static constexpr bool is_current = 
+            std::is_same_v<U, MyClass<T>::Inner>; // 当前实例化检测
+    };
+};
+
+// 测试用例
+int main() {
+    MyClass<int>::Inner<double> inner;
+    static_assert(inner.is_current);
+    
+    return 0;
+}
 ```
 
----
+**题目5**
+**设计一个结合ADL和模板参数作用域的工具，要求：**
+- 自动注册类型到工厂类
+- 使用ADL查找注册函数
+- 测试用例验证多命名空间注册
 
-#### Question 3: Legacy Compatibility with Modules
-
-Task: Wrap a legacy C-style API in a module.
-
+**答案**  
 ```cpp
-// legacy.ixx  
-module;  
-#include "legacy.h" // void legacy_init();  
-export module legacy;  
+#include <map>
+#include <string>
 
-export void init() { legacy_init(); }  
-```
+// 类型注册工厂
+template<typename Key>
+class Registry {
+    std::map<Key, std::string> registry;
+public:
+    template<typename T>
+    void register_type(const std::string& name) {
+        registry[name] = typeid(T).name(); // 依赖名称查找
+    }
+    
+    void list_types() const {
+        for (const auto& [name, type] : registry) {
+            std::cout << name << " -> " << type << std::endl;
+        }
+    }
+};
 
-Test Case:
+// ADL注册函数
+namespace NS1 {
+    struct TypeA {};
+    
+    void register_type(Registry<TypeA>& reg, const std::string& name) {
+        reg.register_type<TypeA>(name);
+    }
+}
 
-```cpp
-import legacy;  
-int main() {  
-    init(); // Calls legacy_init()  
-}  
-```
+namespace NS2 {
+    struct TypeB {};
+    
+    void register_type(Registry<TypeB>& reg, const std::string& name) {
+        reg.register_type<TypeB>(name);
+    }
+}
 
----
-
-#### Question 4: Module Interface Unit with Templates
-
-Task: Export a template class `Stack` in a module.
-
-```cpp
-// stack.ixx  
-export module stack;  
-
-export template<typename T>  
-class Stack {  
-    T* data;  
-public:  
-    void push(T val);  
-    T pop();  
-};  
-
-template<typename T>  
-void Stack<T>::push(T val) { /* ... */ }  
-
-template<typename T>  
-T Stack<T>::pop() { /* ... */ }  
-```
-
-Test Case:
-
-```cpp
-import stack;  
-int main() {  
-    Stack<int> s;  
-    s.push(42);  
-    s.pop();  
-}  
-```
-
----
-
-#### Question 5: Optimizing Builds with Modules
-
-Task: Convert a header-only library (`utils.h`) into a module.
-
-```cpp
-// utils.ixx  
-export module utils;  
-
-export template<typename T>  
-T clamp(T val, T min, T max) {  
-    return (val < min) ? min : (val > max) ? max : val;  
-}  
-```
-
-Test Case:
-
-```cpp
-import utils;  
-int main() {  
-    clamp(10, 0, 5); // Returns 5  
-}  
+// 测试用例
+int main() {
+    Registry<TypeA> reg_a;
+    NS1::register_type(reg_a, "TypeA");
+    
+    Registry<TypeB> reg_b;
+    NS2::register_type(reg_b, "TypeB");
+    
+    reg_a.list_types();
+    reg_b.list_types();
+    
+    return 0;
+}
 ```
 
 ---
 
-#### Question 6: Math Module with Partitions  
-Task: Split a `math` module into `:core` (add/subtract) and `:advanced` (sqrt).  
-Solution:  
-```cpp  
-// math-core.ixx  
-export module math:core;  
-export int add(int a, int b) { return a + b; }  
-export int subtract(int a, int b) { return a - b; }  
-
-// math-advanced.ixx  
-export module math:advanced;  
-export double sqrt(double x) { /* ... */ }  
-
-// math.ixx  
-export module math;  
-export import :core;  
-export import :advanced;  
-```
-Test Case:  
-```cpp  
-import math;  
-int main() {  
-    add(15, 3);      // Output usage  
-    sqrt(25.0);     // Output usage  
-}  
-```
+**测试用例执行说明**
+1. **编译命令**（使用C++17标准）：
+   ```bash
+   g++ -std=c++17 -o test test.cpp && ./test
+   ```
+2. **预期输出**：
+   - 题目1输出：
+     ```
+     [DEFAULT] Hello
+     [CUSTOM] World
+     ```
+   - 题目2输出（无输出，程序正常退出）
+   - 题目3输出（无输出，静态断言通过）
+   - 题目4输出（无输出，静态断言通过）
+   - 题目5输出：
+     ```
+     TypeA -> St4TypeA
+     TypeB -> St4TypeB
+     ```
 
 ---
 
-#### Question 7: Legacy Header Wrapper  
-Task: Wrap a legacy C header (`legacy.h`) in a module.  
-Solution:  
-```cpp  
-// legacy.ixx  
-module;  
-#include "legacy.h" // void legacy_init();  
-export module legacy;  
-export void init() { legacy_init(); }  
-```
-Test Case:  
-```cpp  
-import legacy;  
-int main() {  
-    init(); // Calls legacy_init()  
-}  
-```
+**设计要点说明**
+1. **ADL机制**：通过自定义命名空间和辅助函数实现日志处理器的动态选择
+2. **依赖名称**：`delete_ptr`方法通过依赖名称查找实现自定义删除逻辑
+3. **注入类名称**：`TypeTraits`直接使用`T::value_type`简化成员访问
+4. **当前实例化检测**：利用`this->`限定符实现模板偏特化的运行时检测
+5. **多命名空间注册**：通过ADL在不同命名空间中注册类型到统一工厂
 
----
 
-#### Question 8: Module for a Template Class  
-Task: Export a generic `Stack` template class.  
-Solution:  
-```cpp  
-// stack.ixx  
-export module stack;  
+**总结与学习路径**
+1. **理解名称分类**：区分依赖/非依赖名、限定/非限定名
+2. **掌握查找规则**：普通查找 vs ADL，两阶段查找机制
+3. **实践友元与注入类名**：通过代码示例熟悉语法
+4. **调试技巧**：利用静态断言和分阶段编译定位问题
 
-export template<typename T>  
-class Stack {  
-    T* data;  
-public:  
-    void push(T val) { /* ... */ }  
-    T pop() { /* ... */ }  
-};  
-```
-Test Case:  
-```cpp  
-import stack;  
-int main() {  
-    Stack<int> s;  
-    s.push(10);  
-    s.pop();  
-}  
-```
+建议通过以下步骤巩固知识：
+1. 手动推导示例代码的名称查找过程
+2. 编写包含模板继承和友元的复杂案例
+3. 使用不同编译器（如GCC/Clang）观察错误信息差异
 
----
-
-#### Question 9: Module with `constexpr` Functions  
-Task: Create a `utils` module exporting `constexpr` functions.  
-Solution:  
-```cpp  
-// utils.ixx  
-export module utils;  
-
-export constexpr int clamp(int val, int min, int max) {  
-    return (val < min) ? min : (val > max) ? max : val;  
-}  
-```
-Test Case:  
-```cpp  
-import utils;  
-int main() {  
-    static_assert(clamp(10, 0, 15) == 15);  
-}  
-```
-
----
-
-#### Question 10: Module Partition for Logging  
-Task: Implement a `logger` module with `:file` and `:network` partitions.  
-Solution:  
-```cpp  
-// logger-file.ixx  
-export module logger:file;  
-export void logToFile(const std::string& msg) { /* ... */ }  
-
-// logger-network.ixx  
-export module logger:network;  
-export void logToNetwork(const std::string& msg) { /* ... */ }  
-
-// logger.ixx  
-export module logger;  
-export import :file;  
-export import :network;  
-```
-Test Case:  
-```cpp  
-import logger;  
-int main() {  
-    logToFile("test.log");  
-    logToNetwork("http://example.com");  
-}  
-```
-
----
-
-### Summary  
-This guide covers:  
-1. Module Syntax: Declaring interfaces, partitions, and exports.  
-2. Legacy Code: Safely integrating headers via the global module fragment.  
-3. Design Patterns: Partitioning modules for scalability.  
-4. Testing: Validating modules with compile-time assertions and runtime tests.  
-
-Test cases ensure modules function correctly and adhere to C++20 specifications.
+遇到具体问题时，可结合`nm`工具查看符号表，或使用`-fdump-class-hierarchy`等编译器选项分析模板实例化结果。
