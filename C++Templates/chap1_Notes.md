@@ -1,4 +1,4 @@
-### Chapter 1 Key Concepts and Difficulties
+
 
 #### 1. Function Template Basics
 - Definition: Function templates enable the creation of a single function that can operate on multiple data types.
@@ -130,7 +130,7 @@
 
 ---
 
-### 10 Hard Multiple - Choice Questions
+### 10 Multiple - Choice Questions
 
 1. Question: What is the output of the following code?
    ```cpp
@@ -258,7 +258,7 @@
 
 ---
 
-### 5 Medium Design Questions
+### 5 Design Questions
 
 1. Design: Create a variadic template `sum` that returns the sum of any number of arguments.  
    Test Case: `sum(1, 2, 3)` should output `6`.

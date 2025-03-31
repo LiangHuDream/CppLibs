@@ -180,4 +180,257 @@ int main() {
 2. **Delay Decisions**: Keep infrastructure (databases, UIs) replaceable.
 3. **Test with Mocks**: Compile-time polymorphism enables testing without concrete dependencies.
 
-Every example compiles with `g++ -std=c++17 file.cpp` and demonstrates core principles from Chapters 15–16.
+### **Chapters 15 & 16 Overview**  
+**Chapter 15: "What Is Architecture?"**  
+- Focuses on defining architecture as the **structure of components, their relationships, and design principles** guiding evolution.  
+- Key topics:  
+  1. **Architectural goals**: Managing dependencies between components, enabling flexibility, and delaying decisions.  
+  2. **Impact on development phases**: Deployment, operation, maintenance, and evolution.  
+  3. **Device independence** and avoiding premature commitment to frameworks/databases.  
+
+**Chapter 16: "Independence"**  
+- Discusses designing systems to achieve **independent components** for flexibility and scalability.  
+- Key topics:  
+  1. **Horizontal vs. vertical decoupling**: Separating use cases, layers (UI, business logic, data).  
+  2. **Delaying decisions**: Keeping options open by abstracting volatile components (e.g., databases).  
+  3. **Avoiding duplication** while balancing decoupling.  
+
+---
+
+### **10 Hard Difficulty Multiple-Choice Questions**  
+
+**Question 1**  
+**Which are core goals of software architecture according to Chapter 15?**  
+A) Maximize code performance.  
+B) Delay irreversible decisions.  
+C) Enforce strict coding standards.  
+D) Manage dependencies between components.  
+
+---
+
+**Question 2**  
+**What does "device independence" imply in Clean Architecture?**  
+A) Code must run on all hardware without modification.  
+B) Business logic should not depend on specific I/O devices or frameworks.  
+C) Use cross-platform libraries for all components.  
+D) Avoid using third-party APIs.  
+
+---
+
+**Question 3**  
+**Which principle helps achieve independent deployability of components?**  
+A) Stable Dependencies Principle.  
+B) Interface Segregation Principle.  
+C) Single Responsibility Principle.  
+D) Common Closure Principle.  
+
+---
+
+**Question 4**  
+**Why is horizontal layering insufficient for true independence?**  
+A) It enforces rigid dependencies between layers.  
+B) It doesn’t address vertical use-case boundaries.  
+C) It increases deployment complexity.  
+D) It violates the Open-Closed Principle.  
+
+---
+
+**Question 5**  
+**How does Clean Architecture handle database dependencies?**  
+A) Business logic directly depends on SQL queries.  
+B) Database access is abstracted via interfaces.  
+C) Use a single global database connection.  
+D) Business logic and database are tightly coupled.  
+
+---
+
+**Question 6**  
+**Which is a valid strategy to delay decisions?**  
+A) Hardcoding configuration values.  
+B) Using dependency injection for volatile components.  
+C) Relying on concrete framework APIs.  
+D) Embedding business rules in UI code.  
+
+---
+
+**Question 7**  
+**What is the risk of violating the Stable Dependencies Principle?**  
+A) High-level policies depend on low-level details.  
+B) Components cannot be tested independently.  
+C) Changes propagate unpredictably across the system.  
+D) Code duplication increases.  
+
+---
+
+**Question 8**  
+**Which code snippet aligns with Clean Architecture principles?**  
+**Snippet 1:**  
+```python
+class PaymentProcessor:
+    def __init__(self, db_conn):
+        self.db = db_conn
+    def process(self, amount):
+        self.db.execute("INSERT INTO payments ...")
+```  
+**Snippet 2:**  
+```python
+class PaymentGateway(ABC):
+    @abstractmethod
+    def process_payment(self, amount): pass
+
+class SqlPaymentGateway(PaymentGateway):
+    def __init__(self, db_conn): ...
+    def process_payment(self, amount): ...
+```  
+A) Only Snippet 1.  
+B) Only Snippet 2.  
+C) Both.  
+D) Neither.  
+
+---
+
+**Question 9**  
+**What problem arises when business logic depends on UI frameworks?**  
+A) UI changes force business logic rewrites.  
+B) Business logic becomes reusable across UIs.  
+C) It simplifies testing.  
+D) It improves deployment speed.  
+
+---
+
+**Question 10**  
+**Which is an example of vertical decoupling?**  
+A) Separating code into MVC layers.  
+B) Isolating payment processing from user management.  
+C) Using interfaces for database access.  
+D) Implementing a plugin architecture.  
+
+---
+
+**Answers & Explanations**  
+
+**Answer 1**  
+**Correct**: B, D  
+**Explanation**:  
+- B) Delaying decisions prevents premature commitments (Ch15).  
+- D) Managing dependencies is a core architectural goal (Ch15).  
+- A) Performance is secondary to structural goals.  
+- C) Coding standards are implementation details, not architectural goals.  
+
+---
+
+**Answer 2**  
+**Correct**: B  
+**Explanation**:  
+- B) Device independence means business logic isn’t tied to specific I/O (Ch15).  
+- A) Code may require device-specific drivers but abstracts them.  
+- C/D) Irrelevant to the core concept.  
+
+---
+
+**Answer 3**  
+**Correct**: A  
+**Explanation**:  
+- A) Stable Dependencies Principle ensures components depend only on stable abstractions (Ch16).  
+- B/C/D) Address cohesion or interface design, not deployability.  
+
+---
+
+**Answer 4**  
+**Correct**: B  
+**Explanation**:  
+- B) Horizontal layers (e.g., UI, business logic) don’t isolate use cases vertically (Ch16).  
+- A) Rigid dependencies are a symptom, not the root cause.  
+
+---
+
+**Answer 5**  
+**Correct**: B  
+**Explanation**:  
+- B) Abstracting database access via interfaces decouples business logic (Ch15).  
+- A/C/D) Create tight coupling and violate independence.  
+
+---
+
+**Answer 6**  
+**Correct**: B  
+**Explanation**:  
+- B) Dependency injection defers concrete implementation choices (Ch16).  
+- A/C/D) Fix decisions early, reducing flexibility.  
+
+---
+
+**Answer 7**  
+**Correct**: A, C  
+**Explanation**:  
+- A) High-level components depending on low-level details creates fragility.  
+- C) Violations cause cascading changes (Ch16).  
+- B/D) Unrelated to dependency stability.  
+
+---
+
+**Answer 8**  
+**Correct**: B  
+**Explanation**:  
+- Snippet 2 uses abstraction (`PaymentGateway`), aligning with DIP (Ch11/15).  
+- Snippet 1 directly depends on a database, violating decoupling.  
+
+---
+
+**Answer 9**  
+**Correct**: A  
+**Explanation**:  
+- A) Tight coupling forces rewrites when UI changes (Ch16).  
+- B/D) Independence improves reusability and deployment.  
+
+---
+
+**Answer 10**  
+**Correct**: B  
+**Explanation**:  
+- B) Vertical decoupling isolates use cases (e.g., payment vs. user management) (Ch16).  
+- A/C) Horizontal layering or interface use.  
+- D) Plugin architecture is a horizontal strategy.  
+
+---
+
+### **Test Code Examples**  
+**Example for Q8 (Snippet 2):**  
+```python
+from abc import ABC, abstractmethod
+
+class PaymentGateway(ABC):
+    @abstractmethod
+    def process_payment(self, amount): pass
+
+class SqlPaymentGateway(PaymentGateway):
+    def __init__(self, db_conn):
+        self.db = db_conn
+    def process_payment(self, amount):
+        self.db.execute("INSERT INTO payments ...")
+
+# Test
+class MockDb:
+    def execute(self, query): print(f"Mock: {query}")
+
+gateway = SqlPaymentGateway(MockDb())
+gateway.process_payment(100)  # Output: "Mock: INSERT INTO payments ..."
+```  
+**Compilation**: This Python code runs as-is, demonstrating dependency inversion.  
+
+**Example for Q5:**  
+```python
+class DatabaseInterface(ABC):
+    @abstractmethod
+    def save_payment(self, amount): pass
+
+class PostgresAdapter(DatabaseInterface):
+    def save_payment(self, amount): ...
+
+class BusinessLogic:
+    def __init__(self, db: DatabaseInterface):
+        self.db = db
+    def process_payment(self, amount):
+        self.db.save_payment(amount)
+```  
+**Test**: `BusinessLogic` depends on an abstraction, enabling database swaps without code changes.  

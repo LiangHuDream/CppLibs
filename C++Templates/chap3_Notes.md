@@ -1,9 +1,3 @@
-### Chapter 3: Nontype Template Parameters - Key Points
-
-To master the key concepts of Chapter 3 "Nontype Template Parameters," let's break down the essential components through detailed explanations and code examples:
-
----
-
 ### 1. Definition and Syntax
 Non-type template parameters allow values (not types) as template arguments. They must be compile-time constants.
 

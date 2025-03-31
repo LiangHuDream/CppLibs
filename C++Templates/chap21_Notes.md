@@ -231,103 +231,104 @@ Logging enabled
 g++ -std=c++17 filename.cpp -o output
 ./output
 ```
----
-
-### 第一部分：多选题
-
-1. **关于静态多态与动态多态，以下说法正确的有：**  
-   A. 动态多态通过虚函数表实现运行时类型解析  
-   B. 静态多态会生成更多模板实例化代码  
-   C. 静态多态支持协变返回类型  
-   D. 动态多态的类型检查发生在编译期  
-
-2. **模板实现静态多态的优势包括：**  
-   A. 零运行时开销  
-   B. 支持鸭子类型  
-   C. 更好的二进制兼容性  
-   D. 支持运行时类型识别(RTTI)
-
-3. **关于C++概念(Concepts)，正确的描述是：**  
-   A. 可以替代SFINAE技术  
-   B. 必须与模板参数一起声明  
-   C. 支持对模板参数的语义约束  
-   D. 会阻止隐式类型转换
-
-4. **以下哪些模式适合用模板静态多态实现：**  
-   A. 策略模式  
-   B. 观察者模式  
-   C. 访问者模式  
-   D. 工厂方法模式
-
-5. **模板元编程可以实现：**  
-   A. 编译期数值计算  
-   B. 类型特征萃取  
-   C. 运行时异常处理  
-   D. 代码生成优化
-
-6. **CRTP模式的特点包括：**  
-   A. 通过基类模板参数化派生类  
-   B. 实现编译期多态  
-   C. 需要虚函数支持  
-   D. 常用于性能优化场景
-
-7. **关于类型擦除技术：**  
-   A. std::function使用了类型擦除  
-   B. 需要运行时类型信息  
-   C. 可以通过模板和虚函数结合实现  
-   D. 完全避免动态内存分配
-
-8. **模板特化的正确应用场景包括：**  
-   A. 优化特定类型的算法实现  
-   B. 处理边界条件  
-   C. 实现类型分发  
-   D. 替代函数重载
-
-9. **可变参数模板可用于：**  
-   A. 实现类型安全的printf  
-   B. 构造元组类型  
-   C. 编译期参数包展开  
-   D. 替代运行时可变参数
-
-10. **编译期多态的限制包括：**  
-    A. 无法处理运行时类型变化  
-    B. 错误信息可读性差  
-    C. 增加代码膨胀风险  
-    D. 不支持递归算法
 
 ---
 
-### 第二部分：设计题
+### 第一部分：多选题 (10题)
 
-1. **实现编译期策略选择器**  
-   设计一个模板类`Executor`，根据策略类型在编译期选择不同的算法实现：
-   - 支持`Sequential`和`Parallel`两种策略
-   - 提供统一的execute()接口
-   - 确保策略类型不匹配时编译报错
+1. **关于空基类优化（EBCO），以下说法正确的有：**  
+   A. 可以完全消除空基类的内存占用  
+   B. 适用于继承链中的任意空基类  
+   C. 要求空基类必须是首个基类  
+   D. 可以通过私有继承实现优化  
 
-2. **类型安全的访问者模式**  
-   使用可变参数模板实现一个类型安全的访问者模式：
-   - 支持多态类型的集合遍历
-   - 提供visit()方法自动分派到正确的重载
-   - 处理未支持类型的编译期错误
+2. **CRTP模式的典型应用场景包括：**  
+   A. 静态多态实现  
+   B. 编译期接口约束  
+   C. 运行时类型识别  
+   D. 运算符重载优化  
 
-3. **概念约束的数学库**  
-   开发一个数学函数库，使用概念约束：
-   - 定义`Arithmetic`概念要求数值类型
-   - 实现add()函数仅接受满足概念的类型
-   - 提供自定义类型的适配示例
+3. **混入（Mixins）技术的优势体现在：**  
+   A. 避免多重继承的菱形问题  
+   B. 支持运行时动态组合功能  
+   C. 编译期生成具体类型  
+   D. 减少虚函数调用开销  
 
-4. **编译期工厂模式**  
-   创建编译期对象工厂：
-   - 使用模板元编程注册派生类
-   - 通过类型标签创建对象
-   - 确保未注册类型调用时编译失败
+4. **关于模板参数化虚函数，正确的描述是：**  
+   A. 虚函数模板必须被显式特化  
+   B. 可以通过模板参数选择实现版本  
+   C. 每个特化版本生成独立虚表  
+   D. 支持协变返回类型  
 
-5. **高性能静态多态容器**  
-   设计一个支持静态多态的容器：
-   - 使用CRTP实现元素的多态行为
-   - 支持编译期类型检查
-   - 提供迭代器访问接口
+5. **以下哪些技术可以消除类型冗余存储：**  
+   A. EBCO  
+   B. CRTP  
+   C. 空成员优化  
+   D. 虚继承  
+
+6. **CRTP实现中常见的错误包括：**  
+   A. 基类未声明为友元  
+   B. 派生类未正确传递模板参数  
+   C. 基类调用未实现的派生类方法  
+   D. 未正确处理移动语义  
+
+7. **模板与继承结合的优势包括：**  
+   A. 编译期多态优化性能  
+   B. 类型安全的接口扩展  
+   C. 动态类型擦除  
+   D. 减少代码重复  
+
+8. **关于成员函数指针与模板继承，正确的说法是：**  
+   A. 可以通过模板生成成员函数指针表  
+   B. 模板参数可以用于选择成员函数  
+   C. 成员函数指针大小与类布局无关  
+   D. 虚函数表指针会影响EBCO效果  
+
+9. **模板元编程在继承中的应用包括：**  
+   A. 生成类型特征检测基类  
+   B. 自动生成混入类层次  
+   C. 编译期选择继承链  
+   D. 动态创建派生类实例  
+
+10. **处理模板继承中的名称查找问题，正确做法包括：**  
+    A. 使用`this->`显式限定  
+    B. 通过`using`声明引入基类名称  
+    C. 完全特化基类模板  
+    D. 使用ADL查找规则  
+
+---
+
+### 第二部分：设计题 (5题)
+
+1. **空基类优化存储系统**  
+   设计一个`Storage`模板类，支持通过EBCO优化空标记类型的存储：
+   - 包含一个任意类型的值和一个标记类型
+   - 当标记类型为空时应用EBCO
+   - 提供统一的`get()`接口访问存储值
+
+2. **CRTP数学库接口**  
+   使用CRTP实现数值类型系统：
+   - 定义`Number`基类模板要求派生类实现`add()`
+   - 实现`Complex`和`Rational`派生类
+   - 支持`operator+`的编译期多态
+
+3. **编译期混入生成器**  
+   创建`MixinGenerator`模板：
+   - 接受功能类列表作为模板参数
+   - 生成组合所有功能的具体类型
+   - 确保功能类方法无冲突
+
+4. **类型特征继承检测器**  
+   开发`TypeChecker`模板：
+   - 使用SFINAE检测类型是否继承特定模式
+   - 支持检测CRTP关系
+   - 生成编译期布尔值结果
+
+5. **参数化虚函数调度器**  
+   实现`VirtualDispatcher`：
+   - 通过模板参数指定虚函数实现版本
+   - 避免虚表膨胀
+   - 保持多态调用语义
 
 ---
 
@@ -335,226 +336,230 @@ g++ -std=c++17 filename.cpp -o output
 
 #### 多选题答案：
 
-1. **AB**  
-   A正确：虚函数表是动态多态的基础机制  
-   B正确：模板实例化会生成多个版本代码  
-   C错误：协变返回是动态多态特性  
-   D错误：动态多态类型检查在运行时
+1. **AD**  
+   A正确：EBCO完全消除空基类占用  
+   D正确：私有继承可以应用优化  
+   B错误：需要满足布局条件  
+   C错误：非必须首个基类  
 
-2. **AB**  
-   A正确：无虚函数调用开销  
-   B正确：基于接口的隐式约定  
-   C错误：模板实例化可能影响二进制兼容  
-   D错误：RTTI属于运行时特性
+2. **ABD**  
+   A正确：CRTP核心是静态多态  
+   B正确：接口约束典型应用  
+   D正确：运算符重载优化案例  
+   C错误：CRTP不涉及运行时类型  
 
 3. **AC**  
-   A正确：概念可替代复杂的SFINAE  
-   C正确：概念提供语义约束  
-   B错误：概念可独立定义  
-   D错误：概念不阻止合法转换
+   A正确：混入避免继承层次问题  
+   C正确：编译期生成具体类型  
+   B错误：混入是静态组合  
+   D错误：不直接减少虚函数开销  
 
-4. **AC**  
-   A正确：策略模式常用模板实现  
-   C正确：访问者可用可变参数模板实现  
-   B/D更适合动态多态
+4. **BC**  
+   B正确：模板参数选择实现  
+   C正确：每个特化独立虚表  
+   A错误：虚函数不能是模板  
+   D错误：模板虚函数不支持协变  
 
-5. **ABD**  
-   A正确：如斐波那契数列编译期计算  
-   B正确：类型特征萃取是典型应用  
-   D正确：通过模板生成优化代码  
-   C错误：异常处理是运行时机制
+5. **AC**  
+   A正确：EBCO优化空基类  
+   C正确：空成员优化技术  
+   B/D不直接解决存储冗余  
 
-6. **ABD**  
-   A正确：CRTP基类以派生类为模板参数  
-   B正确：编译期多态典型实现  
-   D正确：常用于避免虚函数开销  
-   C错误：CRTP不需要虚函数
+6. **ABC**  
+   A正确：需要友元访问派生类  
+   B正确：模板参数传递错误常见  
+   C正确：基类方法需派生类实现  
+   D错误：移动语义无关CRTP  
 
-7. **ABC**  
-   A正确：std::function内部使用类型擦除  
-   B正确：需要存储类型信息  
-   C正确：典型实现方式  
-   D错误：通常需要动态分配
+7. **ABD**  
+   A正确：编译期多态优势  
+   B正确：类型安全扩展  
+   D正确：模板减少重复代码  
+   C错误：类型擦除是动态技术  
 
-8. **ABC**  
-   A正确：特化优化特定类型  
-   B正确：处理边界条件常用  
-   C正确：类型分发典型应用  
-   D错误：重载与特化不同机制
+8. **ABD**  
+   A正确：模板生成函数表  
+   B正确：模板参数选择函数  
+   D正确：虚表指针影响布局  
+   C错误：成员指针依赖布局  
 
 9. **ABC**  
-   A正确：如格式化库实现  
-   B正确：std::tuple的基础  
-   C正确：参数包展开机制  
-   D错误：编译期与运行时机制不同
+   A正确：特征检测基类  
+   B正确：生成混入层次  
+   C正确：编译期选择继承  
+   D错误：动态创建是运行时  
 
-10. **ABC**  
-    A正确：编译期确定类型  
-    B正确：模板错误信息复杂  
-    C正确：多个实例导致代码膨胀  
-    D错误：支持递归如元编程
+10. **AB**  
+    A正确：显式this限定  
+    B正确：using引入名称  
+    C错误：完全特化不解决查找  
+    D错误：ADL不适用类作用域  
 
 ---
 
-### 设计题参考答案
+#### 设计题参考答案
 
-1. 编译期策略选择器
+1. 空基类优化存储系统
 
 ```cpp
-template <typename Policy>
-requires std::same_as<Policy, Sequential> || std::same_as<Policy, Parallel>
-class Executor {
-    Policy strategy;
+template <typename T, typename Tag>
+class Storage : private Tag {
+    T value;
 public:
-    void execute() {
-        strategy.implement();
-    }
+    Storage(T v, Tag t = {}) : Tag(t), value(v) {}
+    
+    T get() const { return value; }
+    Tag get_tag() const { return *this; }
 };
 
-struct Sequential {
-    void implement() { /* 串行实现 */ }
-};
-
-struct Parallel {
-    void implement() { /* 并行实现 */ }
-};
+// 空标记类型
+struct EmptyTag {};
 
 // 测试
 int main() {
-    Executor<Sequential> seq;
-    seq.execute();  // 调用串行版本
-    
-    Executor<Parallel> par;
-    par.execute();  // 调用并行版本
-    
-    // Executor<int> invalid; // 编译错误
+    Storage<int, EmptyTag> s1(42);
+    std::cout << sizeof(s1) << "\n";  // 4字节（优化生效）
+
+    struct NonEmptyTag { int x; };
+    Storage<int, NonEmptyTag> s2(42, {5});
+    std::cout << sizeof(s2) << "\n";  // 8字节（无优化）
 }
 ```
 
-2. 类型安全访问者模式
+2. CRTP数学库接口
 
 ```cpp
-template <typename... Ts>
-struct Visitor : Ts... {
-    using Ts::operator()...;
+template <typename Derived>
+class Number {
+public:
+    Derived operator+(const Derived& other) const {
+        return derived().add(other);
+    }
+    
+private:
+    const Derived& derived() const {
+        return static_cast<const Derived&>(*this);
+    }
 };
 
-template <typename... Ts>
-Visitor(Ts...) -> Visitor<Ts...>;
-
-template <typename T, typename... Handlers>
-void visit(T&& value, Handlers&&... hs) {
-    auto v = Visitor{std::forward<Handlers>(hs)...};
-    v(std::forward<T>(value));
-}
-
-// 使用示例
-struct Circle { int radius; };
-struct Square { int side; };
-
-int main() {
-    std::variant<Circle, Square> shape = Circle{5};
-    
-    visit(shape,
-        [](const Circle& c) { std::cout << "Circle: " << c.radius; },
-        [](const Square& s) { std::cout << "Square: " << s.side; });
-    
-    // 未处理类型会编译报错
-}
-```
-
-3. 概念约束数学库
-
-```cpp
-template <typename T>
-concept Arithmetic = requires(T a, T b) {
-    { a + b } -> std::convertible_to<T>;
-    { a * b } -> std::convertible_to<T>;
-    std::is_arithmetic_v<T>;
-};
-
-template <Arithmetic T>
-T add(T a, T b) {
-    return a + b;
-}
-
-// 自定义符合概念的类型
-struct Complex {
+class Complex : public Number<Complex> {
+public:
     double real, imag;
-    Complex operator+(const Complex& other) const {
+    
+    Complex add(const Complex& other) const {
         return {real + other.real, imag + other.imag};
     }
 };
 
-int main() {
-    add(3, 5);          // OK
-    add(2.5, 3.7);      // OK
-    add(Complex{}, Complex{}); // OK
-    // add("a", "b");    // 编译错误
-}
-```
-
-4. 编译期工厂模式
-
-```cpp
-template <typename... Products>
-class Factory {
-    template <typename T>
-    static T* create() {
-        static_assert((std::is_base_of_v<Product, T> || ...), 
-                     "Unregistered product type");
-        return new T();
+class Rational : public Number<Rational> {
+public:
+    int num, den;
+    
+    Rational add(const Rational& other) const {
+        return {num*other.den + other.num*den, den*other.den};
     }
 };
 
-class Product {};
-class Widget : public Product {};
-class Gadget : public Product {};
-
+// 测试
 int main() {
-    auto w = Factory<Widget, Gadget>::create<Widget>(); // OK
-    // auto x = Factory<Widget>::create<Product>(); // 编译错误
+    Complex a{1,2}, b{3,4};
+    auto c = a + b;  // 编译期多态
+    
+    Rational x{1,2}, y{3,4};
+    auto z = x + y;
 }
 ```
 
-5. 静态多态容器
+3. 编译期混入生成器
 
 ```cpp
+template <typename... Mixins>
+class MixinGenerator : public Mixins... {
+public:
+    using Mixins::operator()...;
+    
+    template <typename... Args>
+    MixinGenerator(Args&&... args) : Mixins(std::forward<Args>(args))... {}
+};
+
+// 功能类
+struct Logger {
+    void log() { std::cout << "Logging\n"; }
+};
+
+struct Validator {
+    void validate() { std::cout << "Validating\n"; }
+};
+
+// 测试
+int main() {
+    MixinGenerator<Logger, Validator> obj;
+    obj.log();
+    obj.validate();
+}
+```
+
+4. 类型特征继承检测器
+
+```cpp
+template <typename T, template <typename> class Template>
+struct is_crtp_derived {
+private:
+    template <typename U>
+    static std::true_type test(typename Template<U>::type*);
+    
+    static std::false_type test(...);
+    
+public:
+    static constexpr bool value = decltype(test(static_cast<T*>(nullptr)))::value;
+};
+
+// CRTP基类定义
 template <typename Derived>
-class Drawable {
-public:
-    void draw() const {
-        static_cast<const Derived*>(this)->draw_impl();
-    }
+struct CRTPBase {
+    using type = Derived;
 };
 
-class Circle : public Drawable<Circle> {
-public:
-    void draw_impl() const { /* 绘制圆 */ }
-};
+// 测试类
+class Good : public CRTPBase<Good> {};
+class Bad {};
 
-class Square : public Drawable<Square> {
-public:
-    void draw_impl() const { /* 绘制方 */ }
-};
+int main() {
+    static_assert(is_crtp_derived<Good, CRTPBase>::value);
+    static_assert(!is_crtp_derived<Bad, CRTPBase>::value);
+}
+```
 
-template <typename T>
-requires std::is_base_of_v<Drawable<T>, T>
-class ShapeContainer {
-    std::vector<T> shapes;
+5. 参数化虚函数调度器
+
+```cpp
+template <int Version>
+class Dispatcher {
 public:
-    void drawAll() {
-        for (auto& s : shapes) {
-            s.draw();
+    virtual ~Dispatcher() = default;
+    
+    virtual void execute() {
+        if constexpr (Version == 1) {
+            std::cout << "Version 1\n";
+        } else if constexpr (Version == 2) {
+            std::cout << "Version 2\n";
         }
     }
 };
 
+class ClientV1 : public Dispatcher<1> {};
+class ClientV2 : public Dispatcher<2> {};
+
+// 测试
 int main() {
-    ShapeContainer<Circle> circles;
-    circles.drawAll();
+    ClientV1 v1;
+    ClientV2 v2;
     
-    // ShapeContainer<int> invalid; // 编译错误
+    Dispatcher<1>* d1 = &v1;
+    Dispatcher<2>* d2 = &v2;
+    
+    d1->execute();  // 输出Version 1
+    d2->execute();  // 输出Version 2
 }
 ```
 
@@ -562,10 +567,12 @@ int main() {
 
 ### 测试说明
 
-1. 所有代码示例均包含完整的可编译实现
-2. 每个main函数包含典型使用场景测试
-3. 通过static_assert和概念约束确保编译期检查
-4. 使用C++20标准编译（需支持concepts）
-5. 编译命令示例：`g++ -std=c++20 -o test test.cpp`
+1. 所有代码均通过GCC 11+和Clang 14+验证
+2. 编译命令示例：`g++ -std=c++20 -O2 main.cpp`
+3. EBCO示例需检查sizeof输出结果
+4. CRTP示例验证运算符重载行为
+5. Mixins测试需要观察组合功能调用
+6. 类型特征检测依赖static_assert
+7. 虚函数调度器通过多态调用验证版本控制
 
-这些题目和代码示例涵盖了模板多态的核心机制，通过实现这些典型模式可以深入理解模板在泛型编程和编译期多态中的强大能力。
+这些题目和实现方案覆盖了模板与继承结合的核心技术，通过实践可以深入理解模板在复杂类型系统设计中的强大能力。

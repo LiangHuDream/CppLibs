@@ -381,7 +381,7 @@ queue.pop(value); // Blocks until element is available
 
 ---
 
-### Detailed Design Answers
+#### Detailed Design Answers
 
 **Question 1: `CallWrapper` Implementation**
 

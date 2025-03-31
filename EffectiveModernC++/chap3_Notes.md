@@ -1,5 +1,4 @@
 
-### Mastering Chapter 3 of *Effective Modern C++*: Key Points and Difficulties
 
 ---
 

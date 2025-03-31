@@ -1,4 +1,5 @@
-以下是《C++ Templates》第十七章「Future Directions」的核心知识点详解及代码实践。我们将通过三个核心方向（Concepts、模块化、协程）展示C++模板的未来发展趋势，并提供可编译的测试用例。
+@[TOC](Future Directions)
+
 
 ---
 
@@ -23,7 +24,7 @@
    - 放宽`typename`使用限制
    - `void`类型规范化（统一处理无返回值函数）
 
-### 17.1 Concepts（概念）
+17.1 Concepts（概念）
 **功能**：通过显式约束模板参数类型，提升编译时类型检查和错误提示的可读性。
 
 #### 示例代码：
@@ -62,10 +63,10 @@ g++ -std=c++20 concepts.cpp -o concepts
 
 ---
 
-### 17.11 Modules（模块）
+17.11 Modules（模块）
 **功能**：替代传统头文件，提升编译速度和封装性。
 
-#### 示例代码：
+示例代码：
 **math_module.ixx**（模块接口文件）：
 ```cpp
 export module math;
@@ -97,7 +98,7 @@ g++ -std=c++20 -fmodules-ts main.cpp math_module.o -o main
 ### 17.6 Deduction for Nonfinal Pack Expansions（非终结包展开推导）
 **功能**：允许在模板参数包展开时进行类型推导。
 
-#### 示例代码：
+示例代码：
 ```cpp
 #include <iostream>
 #include <tuple>
@@ -126,7 +127,7 @@ g++ -std=c++20 pack_deduction.cpp -o pack_deduction
 
 ---
 
-### 关键知识点总结
+关键知识点总结
 
 | 特性                | 核心优势                                                                 | 典型应用场景                     |
 |---------------------|--------------------------------------------------------------------------|----------------------------------|
@@ -136,7 +137,7 @@ g++ -std=c++20 pack_deduction.cpp -o pack_deduction
 
 ---
 
-### 扩展练习
+扩展练习
 尝试实现一个使用Concepts约束的`Comparable`概念，并编写一个通用的比较函数模板：
 
 ```cpp
@@ -167,7 +168,7 @@ int main() {
 ```
 ---
 
-### 多选题
+多选题
 
 题目1：关于C++20 `concept`的描述正确的是？
 A. 必须在模板参数列表中使用`requires`子句  
@@ -421,8 +422,6 @@ int main() {
 ```
 
 ---
-
-### 答案与详解
 
 #### 多选题答案
 1. **答案：B、C**

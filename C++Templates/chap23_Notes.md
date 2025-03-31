@@ -1,4 +1,4 @@
-### Chapter 23: Metaprogramming - 
+### Chapter 23: Metaprogramming
 
 ### Key Concepts and Code Examples
 #### 23.1.1 Value Metaprogramming

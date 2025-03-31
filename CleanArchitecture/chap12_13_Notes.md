@@ -182,7 +182,7 @@ CSV: Report: Data from database
 
 ---
 
-#### **Question 1: Components and Relocatability**  
+**Question 1: Components and Relocatability**  
 Which statements are true about components in software architecture?  
 A) Components must always be statically linked during compilation.  
 B) Relocatability ensures components can be reused across projects without recompilation.  
@@ -191,7 +191,7 @@ D) Linkers resolve dependencies but cannot enforce architectural boundaries.
 
 ---
 
-#### **Question 2: Component Cohesion Principles**  
+**Question 2: Component Cohesion Principles**  
 Which principles are part of the three component cohesion principles discussed in Chapter 13?  
 A) Reuse/Release Equivalence Principle (REP)  
 B) Open/Closed Principle (OCP)  
@@ -200,7 +200,7 @@ D) Dependency Inversion Principle (DIP)
 
 ---
 
-#### **Question 3: Static vs. Dynamic Linking**  
+**Question 3: Static vs. Dynamic Linking**  
 Which statements are true about static and dynamic linking?  
 A) Static linking increases executable size but simplifies deployment.  
 B) Dynamic linking allows for runtime updates without recompiling the main program.  
@@ -209,7 +209,7 @@ D) Dynamic linking requires components to be relocatable.
 
 ---
 
-#### **Question 4: Common Closure Principle (CCP)**  
+**Question 4: Common Closure Principle (CCP)**  
 What does the Common Closure Principle (CCP) emphasize?  
 A) Components should contain classes that change for the same reasons.  
 B) Components should minimize dependencies on volatile modules.  
@@ -218,7 +218,7 @@ D) Components should be closed to modification but open to extension.
 
 ---
 
-#### **Question 5: Reuse/Release Equivalence Principle (REP)**  
+**Question 5: Reuse/Release Equivalence Principle (REP)**  
 Which scenarios violate REP?  
 A) A component includes utility classes used by multiple unrelated teams.  
 B) A component is versioned but lacks documentation for backward compatibility.  
@@ -227,7 +227,7 @@ D) A component contains tightly coupled classes with no clear ownership.
 
 ---
 
-#### **Question 6: Common Reuse Principle (CRP)**  
+**Question 6: Common Reuse Principle (CRP)**  
 Which statements align with CRP?  
 A) Avoid forcing users to depend on classes they don’t use.  
 B) Group classes that are reused together in the same component.  
@@ -236,7 +236,7 @@ D) CRP prioritizes ease of modification over ease of reuse.
 
 ---
 
-#### **Question 7: Tension Diagram for Cohesion**  
+**Question 7: Tension Diagram for Cohesion**  
 In the tension diagram for component cohesion, which principles are at odds?  
 A) REP and CCP  
 B) CCP and CRP  
@@ -245,7 +245,7 @@ D) OCP and DIP
 
 ---
 
-#### **Question 8: Linker Responsibilities**  
+**Question 8: Linker Responsibilities**  
 What responsibilities do linkers have in component-based systems?  
 A) Resolving symbolic references between components.  
 B) Enforcing architectural boundaries between components.  
@@ -254,7 +254,7 @@ D) Managing version compatibility of components.
 
 ---
 
-#### **Question 9: Component Coupling**  
+**Question 9: Component Coupling**  
 Which practices reduce undesirable component coupling?  
 A) Using stable abstractions for cross-component communication.  
 B) Allowing circular dependencies between components.  
@@ -263,7 +263,7 @@ D) Applying the Dependency Inversion Principle (DIP).
 
 ---
 
-#### **Question 10: Practical Example**  
+**Question 10: Practical Example**  
 Consider the following code structure. Which principles are violated?  
 ```cpp
 // MathComponent.h (shared component)
@@ -281,7 +281,7 @@ D) DIP
 
 ---
 
-#### **Answer 1**  
+**Answer 1**  
 **Correct:** B, C, D  
 - **B**: Relocatability ensures components are reusable without recompilation (Chapter 12).  
 - **C**: Dynamic linking shares code across processes, reducing memory usage.  
@@ -290,14 +290,14 @@ D) DIP
 
 ---
 
-#### **Answer 2**  
+**Answer 2**  
 **Correct:** A, C  
 - **A**, **C**: REP, CCP, and CRP are the three cohesion principles (Chapter 13).  
 - **B**, **D**: OCP and DIP are design principles, not cohesion principles.  
 
 ---
 
-#### **Answer 3**  
+**Answer 3**  
 **Correct:** A, B, D  
 - **A**: Static linking increases size but simplifies deployment.  
 - **B**: Dynamic linking allows runtime updates.  
@@ -306,48 +306,48 @@ D) DIP
 
 ---
 
-#### **Answer 4**  
+**Answer 4**  
 **Correct:** A  
 - **A**: CCP groups classes that change together.  
 - **B**, **D**: Relate to other principles (CRP, OCP).  
 
 ---
 
-#### **Answer 5**  
+**Answer 5**  
 **Correct:** B, C  
 - **B**, **C**: REP requires clear versioning and backward compatibility.  
 - **A**, **D**: May not violate REP directly.  
 
 ---
 
-#### **Answer 6**  
+**Answer 6**  
 **Correct:** A, B  
 - **A**, **B**: CRP avoids unnecessary dependencies and groups reused classes.  
 - **C**, **D**: Unrelated to CRP.  
 
 ---
 
-#### **Answer 7**  
+**Answer 7**  
 **Correct:** B  
 - **B**: CCP (group changes) vs. CRP (avoid unused dependencies) conflict.  
 
 ---
 
-#### **Answer 8**  
+**Answer 8**  
 **Correct:** A  
 - **A**: Linkers resolve references.  
 - **B**, **D**: Not linker responsibilities.  
 
 ---
 
-#### **Answer 9**  
+**Answer 9**  
 **Correct:** A, D  
 - **A**, **D**: Stable abstractions and DIP reduce coupling.  
 - **B**, **C**: Harmful practices.  
 
 ---
 
-#### **Answer 10**  
+**Answer 10**  
 **Correct:** B, C  
 - **B**: CCP violated—classes change for different reasons.  
 - **C**: CRP violated—users depend on unused classes.  

@@ -361,9 +361,6 @@ int main() {
    static_assert(std::is_same_v<typename ConsList::head, int>);
    ```
 
-**Compilation**
-Ensure all `static_assert` conditions pass. If any fail, the compiler will throw an error.
-
 ---
 
 ### Key Takeaways

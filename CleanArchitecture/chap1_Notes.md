@@ -166,7 +166,7 @@ g++ -o employee_refactored employee_refactored.cpp && ./employee_refactored
 
 ---
 
-#### **Question 1**  
+**Question 1**  
 What is the primary goal of software architecture according to Chapter 1?  
 A) To maximize the number of features delivered in the first release  
 B) To minimize the human effort required to build and maintain the system  
@@ -175,7 +175,7 @@ D) To align with the latest programming paradigms
 
 ---
 
-#### **Question 2**  
+**Question 2**  
 In the case study presented, what caused the exponential growth in the cost per line of code?  
 A) Poorly trained developers  
 B) Accumulation of technical debt and architectural decay  
@@ -184,7 +184,7 @@ D) Hardware limitations
 
 ---
 
-#### **Question 3**  
+**Question 3**  
 Which statement best describes the relationship between "behavior" and "architecture" in software?  
 A) Behavior is more important than architecture.  
 B) Architecture ensures long-term maintainability, while behavior addresses immediate functionality.  
@@ -193,7 +193,7 @@ D) Behavior and architecture are always in direct conflict.
 
 ---
 
-#### **Question 4**  
+**Question 4**  
 What critical insight does the "Hare and Tortoise" analogy highlight?  
 A) Fast development cycles guarantee long-term success.  
 B) Clean code and disciplined design are prerequisites for sustainable development.  
@@ -202,7 +202,7 @@ D) Testing is more important than design.
 
 ---
 
-#### **Question 5**  
+**Question 5**  
 Which principle does structured programming emphasize?  
 A) Use of unrestricted `goto` statements  
 B) Functional decomposition into provable units  
@@ -211,7 +211,7 @@ D) Immutable data structures
 
 ---
 
-#### **Question 6**  
+**Question 6**  
 What is the consequence of ignoring architectural quality early in a project?  
 A) Increased short-term productivity  
 B) Higher long-term maintenance costs and reduced adaptability  
@@ -220,7 +220,7 @@ D) Simplified debugging
 
 ---
 
-#### **Question 7**  
+**Question 7**  
 Which of the following are symptoms of poor architecture? (Select all that apply)  
 A) Frequent merge conflicts in version control  
 B) High test coverage  
@@ -229,7 +229,7 @@ D) Low initial development speed
 
 ---
 
-#### **Question 8**  
+**Question 8**  
 How does the chapter define "design" in the context of software?  
 A) The visual layout of user interfaces  
 B) The arrangement of code to minimize effort for future changes  
@@ -238,7 +238,7 @@ D) The selection of third-party libraries
 
 ---
 
-#### **Question 9**  
+**Question 9**  
 What role does "testability" play in evaluating architecture?  
 A) It is irrelevant to architectural quality.  
 B) It enforces rigid design patterns.  
@@ -247,7 +247,7 @@ D) It prioritizes speed over correctness.
 
 ---
 
-#### **Question 10**  
+**Question 10**  
 Why does the chapter argue that "architecture" is more valuable than "behavior"?  
 A) Behavior can always be fixed later.  
 B) Architecture enables adaptability, while behavior is temporary.  
@@ -262,19 +262,19 @@ D) Behavior is impossible to test.
 
 ---
 
-#### **Question 1**  
+**Question 1**  
 **Correct Answer:** B  
 **Explanation:** The chapter emphasizes that the primary goal of architecture is to minimize the human effort required to build and maintain the system over its lifetime. Short-term feature delivery (A) or perfect initial behavior (C) are secondary to sustainable design.  
 
 ---
 
-#### **Question 2**  
+**Question 2**  
 **Correct Answer:** B  
 **Explanation:** The case study attributes rising costs to architectural decay (technical debt), where poor design choices made early in the project led to exponential maintenance difficulties.  
 
 ---
 
-#### **Question 3**  
+**Question 3**  
 **Correct Answers:** B, C  
 **Explanation:**  
 - B: Architecture ensures long-term maintainability, while behavior addresses immediate needs.  
@@ -283,7 +283,7 @@ D) Behavior is impossible to test.
 
 ---
 
-#### **Question 4**  
+**Question 4**  
 **Correct Answers:** B, C  
 **Explanation:**  
 - B: Clean code and discipline are prerequisites for avoiding long-term failure.  
@@ -291,19 +291,19 @@ D) Behavior is impossible to test.
 
 ---
 
-#### **Question 5**  
+**Question 5**  
 **Correct Answer:** B  
 **Explanation:** Structured programming focuses on breaking down problems into smaller, provable units using constructs like loops and conditionals.  
 
 ---
 
-#### **Question 6**  
+**Question 6**  
 **Correct Answer:** B  
 **Explanation:** Ignoring architecture leads to technical debt, which increases maintenance costs and reduces the system’s ability to adapt to changes.  
 
 ---
 
-#### **Question 7**  
+**Question 7**  
 **Correct Answers:** A, C  
 **Explanation:**  
 - A: Frequent merges indicate fragmented ownership of poorly structured code.  
@@ -311,19 +311,19 @@ D) Behavior is impossible to test.
 
 ---
 
-#### **Question 8**  
+**Question 8**  
 **Correct Answer:** B  
 **Explanation:** Design is defined as structuring code to reduce future effort, aligning with the goal of sustainable architecture.  
 
 ---
 
-#### **Question 9**  
+**Question 9**  
 **Correct Answer:** C  
 **Explanation:** Testable architectures allow components to be validated and modified safely, ensuring long-term viability.  
 
 ---
 
-#### **Question 10**  
+**Question 10**  
 **Correct Answer:** B  
 **Explanation:** The chapter argues that architecture’s value lies in enabling adaptability (e.g., handling future requirements), while behavior is transient.  
 
@@ -331,7 +331,7 @@ D) Behavior is impossible to test.
 
 ### **Code Test Cases**  
 
-#### Example 1: Structured Programming in C  
+Example 1: Structured Programming in C  
 ```c
 #include <stdio.h>
 
@@ -348,7 +348,7 @@ int main() {
 
 ---
 
-#### Example 2: Testable Function in Python  
+Example 2: Testable Function in Python  
 ```python
 def calculate_squares(n: int) -> list[int]:
     return [i*i for i in range(n)]
@@ -365,4 +365,3 @@ if __name__ == "__main__":
 
 ---
 
-These questions and code examples reinforce the chapter’s focus on sustainable design, technical debt, and the interplay between behavior and architecture.

@@ -406,3 +406,190 @@ class Main {
   }
 }
 ``` 
+
+### Multiple-Choice Questions
+
+**1. Which of the following are valid strategies to handle mutability in functional programming systems?**  
+A. Use global mutable variables for shared state  
+B. Segregate components into mutable and immutable layers  
+C. Apply event sourcing to store state transitions  
+D. Implement all business logic in mutable classes  
+
+**2. Which scenarios indicate a violation of the Single Responsibility Principle (SRP)?**  
+A. A class `Employee` with methods `calculatePay()`, `generateReport()`, and `saveToDatabase()`  
+B. A module `Logger` handling log formatting and sending logs to cloud storage  
+C. A service `PaymentProcessor` that only validates credit card transactions  
+D. A class `UserManager` that handles authentication, profile updates, and email notifications  
+
+**3. How does immutability improve architectural design?**  
+A. Eliminates all race conditions in distributed systems  
+B. Reduces side effects, making code easier to test and debug  
+C. Forces all data changes through explicit state transitions  
+D. Guarantees 100% thread safety without additional mechanisms  
+
+**4. Which code snippets comply with SRP?**  
+A.  
+```java
+class ReportGenerator {
+    void generateReport() { /* ... */ }
+    void saveToPDF() { /* ... */ }
+}
+```  
+B.  
+```java
+class DataFetcher {
+    Data fetchData() { /* ... */ }
+}
+class ReportExporter {
+    void exportToPDF(Data data) { /* ... */ }
+}
+```  
+C.  
+```java
+class TaskHandler {
+    void processTask() { /* ... */ }
+    void logActivity() { /* ... */ }
+}
+```  
+D.  
+```java
+class PaymentValidator {
+    boolean validatePayment() { /* ... */ }
+}
+class PaymentExecutor {
+    void executePayment() { /* ... */ }
+}
+```  
+
+**5. What are the risks of violating SRP?**  
+A. Increased code duplication  
+B. Easier debugging due to centralized logic  
+C. Frequent merge conflicts in version control  
+D. Improved component reusability  
+
+**6. How does event sourcing align with functional programming principles?**  
+A. It relies entirely on mutable database records  
+B. It avoids state mutation by storing a log of events  
+C. It requires all events to be processed synchronously  
+D. It enables rebuilding state without side effects  
+
+**7. Which patterns help invert dependencies to comply with DIP?**  
+A. Directly instantiating concrete classes in high-level modules  
+B. Using dependency injection frameworks to provide implementations  
+C. Defining interfaces in high-level modules implemented by low-level modules  
+D. Inheriting from volatile concrete classes  
+
+**8. What makes a class "closed for modification" under OCP?**  
+A. Allowing new functionality via inheritance/extension  
+B. Requiring changes to existing code for every new feature  
+C. Using private methods to hide implementation details  
+D. Avoiding interfaces to prevent coupling  
+
+**9. Which practices reduce concurrency issues in functional architectures?**  
+A. Using `synchronized` blocks liberally  
+B. Isolating mutable state in transactional boundaries  
+C. Relying on immutable data structures for core logic  
+D. Allowing all threads to modify shared global state  
+
+**10. How does SRP relate to architectural boundaries?**  
+A. It encourages grouping code by technical layers (UI, DB)  
+B. It mandates separate components for different business actors  
+C. It allows mixing unrelated features in a module for convenience  
+D. It prevents business rules from depending on frameworks  
+
+---
+
+### Answers & Explanations
+
+**1. B, C**  
+- **B** segregates mutability to minimize risks. **C** uses event history for state reconstruction.  
+- A violates immutability; D contradicts functional principles.  
+
+**2. A, D**  
+- **A** mixes payroll, reporting, and persistence. **D** combines auth, profile, and notifications.  
+- B/C have cohesive responsibilities.  
+
+**3. B, C**  
+- **B** simplifies testing. **C** ensures controlled state changes.  
+- A/D overstate immutability's guarantees.  
+
+**4. B, D**  
+- **B/D** separate data fetching, exporting, validation, and execution.  
+- A/C bundle unrelated responsibilities.  
+
+**5. A, C**  
+- **A** arises from duplicated logic. **C** occurs when multiple teams modify the same class.  
+- B/D are incorrect outcomes.  
+
+**6. B, D**  
+- **B** uses event logs instead of mutable state. **D** rebuilds state without side effects.  
+- A/C contradict event sourcing.  
+
+**7. B, C**  
+- **B** injects abstractions. **C** inverts dependencies via interfaces.  
+- A/D violate DIP.  
+
+**8. A, C**  
+- **A** allows extension. **C** hides details to minimize changes.  
+- B/D oppose OCP.  
+
+**9. B, C**  
+- **B** confines mutations. **C** uses immutability to prevent races.  
+- A/D increase concurrency risks.  
+
+**10. B, D**  
+- **B** aligns components with business actors. **D** decouples core logic.  
+- A/C violate SRP goals.  
+
+---
+
+### Test Code Examples
+
+**1. Immutable Data Structure (Chapter 6):**  
+```java
+public final class ImmutablePoint {
+    private final double x;
+    private final double y;
+
+    public ImmutablePoint(double x, double y) {
+        this.x = x;
+        this.y = y;
+    }
+
+    public double getX() { return x; }
+    public double getY() { return y; }
+
+    public static void main(String[] args) {
+        ImmutablePoint p = new ImmutablePoint(3, 4);
+        System.out.println("Point: (" + p.getX() + ", " + p.getY() + ")");
+    }
+}
+```
+
+**2. SRP-Compliant Classes (Chapter 7):**  
+```java
+interface DataFetcher {
+    String fetchData();
+}
+
+class ReportGenerator {
+    private DataFetcher fetcher;
+    
+    public ReportGenerator(DataFetcher fetcher) {
+        this.fetcher = fetcher;
+    }
+    
+    public String generate() {
+        return "Report: " + fetcher.fetchData();
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        DataFetcher fetcher = () -> "Sample Data";
+        ReportGenerator generator = new ReportGenerator(fetcher);
+        System.out.println(generator.generate());
+    }
+}
+```
+
