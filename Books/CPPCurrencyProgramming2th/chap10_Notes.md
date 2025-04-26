@@ -1,0 +1,492 @@
+@[TOC](并行算法)
+## 1. 核心知识点
+1. **执行策略**（Execution Policies）
+C++17引入的执行策略允许开发者指定算法的并行方式，主要分为三类：
+std::execution::seq：顺序执行（无并行）
+std::execution::par：多线程并行
+std::execution::par_unseq：允许向量化指令和跨线程交错执行的并行
+ 2. **关键点**：
+选择par时需保证操作是线程安全的。
+par_unseq需函数无数据竞争且可向量化。
+不支持并行执行的算法默认会退化为顺序执行。
+## 2. 使用并行算法
+原有标准库算法（如sort, for_each）通过添加执行策略参数实现并行化：
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <execution>
+
+int main() {
+    // 初始化测试数据
+    std::vector<int> data = {5, 3, 8, 1, 2, 7, 4, 6};
+
+    // 输出排序前的数据
+    std::cout << "Before sorting: ";
+    for (int num : data) {
+        std::cout << num << " ";
+    }
+    std::cout << std::endl;
+
+    // 并行排序
+    std::sort(std::execution::par, data.begin(), data.end());
+
+    // 输出排序后的数据
+    std::cout << "After sorting: ";
+    for (int num : data) {
+        std::cout << num << " ";
+    }
+    std::cout << std::endl;
+
+    // 输出遍历前的数据
+    std::cout << "Before parallel for_each: ";
+    for (int num : data) {
+        std::cout << num << " ";
+    }
+    std::cout << std::endl;
+
+    // 并行遍历，将每个元素乘以 2
+    std::for_each(std::execution::par, data.begin(), data.end(), [](int& x) {
+        x *= 2;
+    });
+
+    // 输出遍历后的数据
+    std::cout << "After parallel for_each: ";
+    for (int num : data) {
+        std::cout << num << " ";
+    }
+    std::cout << std::endl;
+
+    return 0;
+}
+```
+## 3. 数据竞争与线程安全
+
+**问题**：并行操作共享数据可能导致未定义行为。
+**解决**：
+- 避免修改共享状态，使用线程本地存储（TLS）。
+- 使用原子操作或互斥锁（可能抵消并行优势）。
+## 4. 性能优化
+
+- 粒度控制：任务过细会导致调度开销，过粗则负载不均。
+- 数据局部性：优化内存访问模式，减少缓存失效。
+
+**代码**：并行std::transform
+```cpp
+#include <vector>
+#include <execution>
+#include <algorithm>
+#include <iostream>
+
+int main() {
+    std::vector<int> input = {1, 2, 3, 4, 5};
+    std::vector<int> output(input.size());
+
+    // 输出输入向量
+    std::cout << "Input vector: ";
+    for (int num : input) {
+        std::cout << num << " ";
+    }
+    std::cout << std::endl;
+
+    // 并行转换：每个元素平方
+    std::transform(std::execution::par,
+                   input.begin(), input.end(),
+                   output.begin(),
+                   [](int x) { return x * x; });
+
+    // 输出输出向量
+    std::cout << "Output vector after parallel transformation: ";
+    for (int num : output) {
+        std::cout << num << " ";
+    }
+    std::cout << std::endl;
+
+    return 0;
+}
+/*
+std::execution::par指示并行执行。
+Lambda函数需线程安全，不可修改外部变量。
+输出迭代器必须有效且不重叠。
+*/
+```
+
+**代码**：并行std::for_each与竞态处理
+```cpp
+#include <vector>
+#include <execution>
+#include <atomic>
+#include<iostream>
+
+int main() {
+    std::vector<int> data(1000, 1);
+    std::atomic<int> sum = 0;
+
+    // 并行求和（原子操作避免竞态）
+    std::for_each(std::execution::par,
+                  data.begin(), data.end(),
+                  [&sum](int x) { sum += x; });
+
+    // 输出结果：1000
+    std::cout << "Sum: " << sum << std::endl;
+}
+/*
+- 使用std::atomic确保线程安全的累加。
+- 无锁设计可提升性能，但需权衡实现复杂度。
+*/
+```
+
+## 5. 常见问题与陷阱
+1. 不可用的迭代器：
+- 输入/输出迭代器在并行期间必须保持有效且不重叠。
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <execution>
+
+int main() {
+    try {
+        std::vector<int> v = {1, 2, 3};
+        v.reserve(100);
+
+        std::cout << "Before parallel for_each, vector size: " << v.size() << std::endl;
+
+        // 错误：v在并行过程中被修改
+        std::for_each(std::execution::par, v.begin(), v.end(), [&](int x) {
+            v.push_back(x);
+        });
+
+        std::cout << "After parallel for_each, vector size: " << v.size() << std::endl;
+        std::cout << "Vector elements after operation:" << std::endl;
+        for (int num : v) {
+            std::cout << num << " ";
+        }
+        std::cout << std::endl;
+    } catch (const std::exception& e) {
+        std::cerr << "Exception caught: " << e.what() << std::endl;
+    }
+
+    return 0;
+}    
+```
+
+2. 异常处理：
+- 并行算法中未捕获的异常会导致std::terminate。
+- 使用try-catch块需注意执行策略是否允许。
+## 6. 最佳实践
+1. 基准测试：
+- 比较并行与串行性能，确保并行带来收益。
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <execution>
+#include <chrono>
+#include <random>
+
+int main() {
+    // 定义向量大小
+    const int size = 1000000;
+    // 创建包含随机数据的向量
+    std::vector<int> data(size);
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> dis(1, 1000000);
+
+    // 填充随机数据
+    for (int i = 0; i < size; ++i) {
+        data[i] = dis(gen);
+    }
+
+    // 记录开始时间
+    auto start = std::chrono::high_resolution_clock::now();
+
+    // 并行排序
+    std::sort(std::execution::par, data.begin(), data.end());
+
+    // 记录结束时间
+    auto end = std::chrono::high_resolution_clock::now();
+
+    // 计算并输出排序所花费的时间
+    auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
+    std::cout << "Time: " << duration.count() << " ns\n";
+
+    return 0;
+}    
+```
+2. 选择合适的执行策略：
+- par适用于CPU密集型任务。
+- par_unseq适合SIMD指令优化的场景（如数值计算）。
+## 7. 多选题
+### 7.1 题目
+1. 下列关于C++17执行策略的说法错误的是：
+A. std::execution::seq 保证算法完全顺序执行，等同于传统非并行版本。  
+B. std::execution::par 允许在多个线程中并行执行，但同一线程内的操作必须顺序执行。  
+C. std::execution::par_unseq 允许跨线程和向量化（如SIMD指令）的并行执行。  
+D. 使用par_unseq策略时，访问共享资源的代码必须是无锁的。  
+
+2. 以下场景适合使用并行算法的是：
+A. 对std::list中的每个元素进行独立数学计算。
+B. 对std::vector进行快速排序。
+C. 遍历一个树结构，修改每个节点的值。
+D. 对两个数组进行逐元素相加，结果存储到第三个数组。  
+
+3. 关于并行算法中的异常处理，正确的是：
+A. 并行算法中多个元素抛出的异常会被合并为一个std::exception_list对象。  
+B. 使用并行执行策略时，未捕获的异常会直接终止程序。  
+C. std::execution::par策略的并行算法中，一旦某个元素抛出异常，其他所有操作会立即停止。  
+D. 只有seq策略支持异常传播。  
+
+4. 下列代码的潜在问题是：
+	```cpp
+	std::vector<int> vec(1000, 1);
+	int sum = 0;
+	std::for_each(std::execution::par, vec.begin(), vec.end(), 
+	    [&](int x) { sum += x; });
+	```
+	A. 性能不如串行版本。
+   B. 会导致数据竞争。
+   C. 可以正确累加求和。
+   D. 违反了par_unseq的内存访问规则。
+
+5. 关于自定义并行任务的设计，正确的说法是：
+A. 可以通过继承std::thread实现更灵活的线程池。
+B. 与标准库并行算法相比，手动线程池在任务分配上更高效。
+C. C++17的并行算法必须依赖std::execution策略，无法扩展。
+D. std::async的异步策略可以替代并行算法的所有功能。
+
+### 7.2 多选答案
+1. 答案：B
+解析：std::execution::par允许跨线程并行，同一线程内的操作可能被调度打断（如任务窃取），不保证顺序。par_unseq还要考虑向量化的无序执行（例如SIMD指令），D正确（因par_unseq要求无锁）。
+
+2. 答案：B, D
+解析：快速排序的分治特性适合并行（如std::sort(par, ...)）。选项D的数据独立性也适合。A错误（std::list迭代器不是随机访问，不支持并行策略）。C错误（树结构遍历存在依赖）。
+
+3. 答案：A
+解析：C++17中，并行算法抛出的多个异常会由std::terminate终止，但规范未明确定义exception_list的实现（某些库可能支持A）。B错误（未定义行为）。C错误（不保证立即停止）。
+
+4. 答案：B
+解析：sum += x存在数据竞争，需用原子变量或归约操作。D中的问题在于par_unseq的内存访问需要无副作用，但此处的问题独立于策略。
+
+5. 答案：B
+解析：B正确（手动优化可能更好）。C错误（可通过自定义执行器扩展）。D错误（std::async不直接提供并行算法的高层抽象）。
+## 9. 设计题目
+1. 使用std::sort的并行版本对大型std::vector<int>进行排序，并与串行版本对比时间。
+要求：生成随机数填充容器，输出两种策略的排序耗时。
+
+2. 实现并行版本的std::transform，对两个std::vector<double>进行逐元素相加，结果存入第三个容器。
+要求：不允许共享写入，测试不同数据规模下的正确性。
+
+3. 使用并行策略实现累加求和（类似std::accumulate），确保线程安全。
+要求：使用分段累加并合并结果，验证大数据的正确性。
+
+4. 在多线程环境下，利用并行算法处理图像滤镜（如反色处理）。
+要求：每个像素处理为独立任务，使用std::for_each的并行策略。
+
+5. 设计一个并行任务链：先对std::vector排序，再计算其前缀和。
+要求：使用std::execution策略，确保依赖关系正确处理。
+## 10. 设计题目答案
+```cpp
+// 1. 
+#include <algorithm>
+#include <vector>
+#include <random>
+#include <chrono>
+#include <execution>
+#include <iostream>
+
+int main() {
+    const size_t data_size = 1'000'000;
+    std::vector<int> data_serial(data_size);
+    std::vector<int> data_parallel(data_size);
+
+    // 生成随机数
+    std::mt19937 gen{std::random_device{}()};
+    std::uniform_int_distribution<int> dist(1, 1000);
+    auto rand_gen = [&] { return dist(gen); };
+
+    std::generate(data_serial.begin(), data_serial.end(), rand_gen);
+    data_parallel = data_serial;
+
+    // 串行排序计时
+    auto start_serial = std::chrono::high_resolution_clock::now();
+    std::sort(data_serial.begin(), data_serial.end());
+    auto end_serial = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed_serial = end_serial - start_serial;
+
+    // 并行排序计时
+    auto start_parallel = std::chrono::high_resolution_clock::now();
+    std::sort(std::execution::par, data_parallel.begin(), data_parallel.end());
+    auto end_parallel = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed_parallel = end_parallel - start_parallel;
+
+    std::cout << "Serial sort time: " << elapsed_serial.count() << "s\n";
+    std::cout << "Parallel sort time: " << elapsed_parallel.count() << "s\n";
+}
+
+/*
+使用std::execution::par策略激活并行排序
+生成百万级随机测试数据确保可见性能差异
+需包含<execution>头文件启用并行策略
+输出显示并行版本通常比串行快2-5倍（取决于核心数）
+实际结果需在支持并行执行的编译器环境中测试
+*/
+
+// 2. 
+#include <vector>
+#include <execution>
+#include <iostream>
+#include <numeric>
+
+void test_transform(size_t N) {
+    std::vector<double> a(N), b(N), result(N);
+    std::iota(a.begin(), a.end(), 0);
+    std::iota(b.begin(), b.end(), N);
+
+    std::transform(std::execution::par, 
+                  a.begin(), a.end(), b.begin(), result.begin(),
+                  [](double x, double y) { return x + y; });
+
+    // 验证结果（取头尾样本）
+    bool correct = (result[0] == 0+N) && (result.back() == (N-1)+(2*N-1));
+    std::cout << N << " elements: " 
+              << (correct ? "Passed" : "Failed") << "\n";
+}
+
+int main() {
+    test_transform(1000);
+    test_transform(1'000'000);
+    test_transform(10'000'000);
+}
+// 3.
+#include <vector>
+#include <future>
+#include <numeric>
+#include <iostream>
+
+template<typename T>
+T parallel_sum(const std::vector<T>& vec) {
+    const size_t min_per_thread = 1000;
+    const size_t max_threads = (vec.size() + min_per_thread - 1) / min_per_thread;
+
+    const size_t hardware_threads = std::thread::hardware_concurrency();
+    const size_t num_threads = std::min(hardware_threads != 0 ? hardware_threads : 2, max_threads);
+
+    const size_t block_size = vec.size() / num_threads;
+
+    std::vector<std::future<T>> futures;
+    for(size_t i=0; i<num_threads; ++i) {
+        auto start = vec.begin() + i*block_size;
+        auto end = (i == num_threads-1) ? vec.end() : start + block_size;
+        futures.push_back(std::async([=]{ return std::accumulate(start, end, T{}); }));
+    }
+
+    T total = 0;
+    for(auto& f : futures)
+        total += f.get();
+    return total;
+}
+
+int main() {
+    std::vector<long> vec(10'000'000, 1); // 全1向量，和为10^7
+    long sum = parallel_sum(vec);
+    std::cout << "Sum: " << sum << " (Expected: 10,000,000)\n";
+}
+/*
+使用std::transform搭配并行执行策略
+lambda表达式定义元素级加法操作
+无共享写入，各元素独立计算
+测试不同数据规模的正确性
+验证首尾元素确保整体正确
+*/
+// 4.
+#include <vector>
+#include <algorithm>
+#include <execution>
+#include <iostream>
+
+struct Pixel {
+    unsigned char r = 0, g = 0, b = 0;
+    
+    void invert() {
+        r = 255 - r;
+        g = 255 - g;
+        b = 255 - b;
+    }
+};
+
+int main() {
+    // 生成测试数据（3x3图像）
+    std::vector<Pixel> image(9);
+    int val = 0;
+    for (auto& p : image) {
+        p.r = val;
+        p.g = val + 50;
+        p.b = val + 100;
+        val += 20;
+    }
+
+    // 打印原始像素
+    std::cout << "Original pixels:\n";
+    for (const auto& p : image) {
+        std::printf("(%3d,%3d,%3d) ", p.r, p.g, p.b);
+    }
+
+    // 并行反色处理
+    std::for_each(std::execution::par, image.begin(), image.end(),
+        [](Pixel& p) { p.invert(); });
+
+    // 打印处理结果
+    std::cout << "\n\nInverted pixels:\n";
+    for (const auto& p : image) {
+        std::printf("(%3d,%3d,%3d) ", p.r, p.g, p.b);
+    }
+    std::cout << "\n";
+    
+    return 0;
+}
+/*
+利用std::for_each配合std::execution::par策略实现并行处理。
+每个像素独立处理，无数据竞争，确保线程安全。
+测试用例展示处理前后的像素变化，验证正确性。
+*/
+
+// 5.
+#include <vector>
+#include <algorithm>
+#include <execution>
+#include <numeric>
+#include <iostream>
+
+int main() {
+    // 生成测试数据
+    std::vector<int> vec{9, 3, 7, 1, 5};
+    std::cout << "Original vector: ";
+    for (int v : vec) std::cout << v << " ";
+
+    // 并行排序（升序）
+    std::sort(std::execution::par, vec.begin(), vec.end());
+
+    // 计算前缀和（顺序执行，因C++标准库无并行partial_sum）
+    std::vector<int> prefix(vec.size());
+    std::partial_sum(vec.cbegin(), vec.cend(), prefix.begin());
+
+    // 输出结果
+    std::cout << "\nSorted vector: ";
+    for (int v : vec) std::cout << v << " ";
+    
+    std::cout << "\nPrefix sums: ";
+    for (int p : prefix) std::cout << p << " ";
+    std::cout << "\n";
+    
+    return 0;
+}
+
+/*
+1.并行排序：使用std::sort的并行策略快速排序数组。
+2.顺序前缀和：由于标准库无并行partial_sum，且计算依赖前序结果，故使用串行计算保证正确性。
+3.依赖处理：显式确保排序完成后再计算前缀和，满足任务链的依赖关系。
+*/
+```

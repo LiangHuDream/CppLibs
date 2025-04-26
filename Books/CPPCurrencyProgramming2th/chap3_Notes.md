@@ -1,0 +1,649 @@
+## 1. 并发中的数据竞争问题
+
+### 1.1. 数据竞争
+
+1. **数据竞争定义**: 多个线程同时访问共享数据，且至少有一个线程进行写操作，而没有合适的同步机制，最终结果依赖于**线程执行顺序**。
+2. **示例代码**
+
+```cpp
+#include <iostream>
+#include <thread>
+
+int sharedData = 0;
+
+void increment() {
+    for (int i = 0; i < 100000; ++i) {
+        ++sharedData; // 存在数据竞争
+    }
+}
+
+int main() {
+    std::thread t1(increment);
+    std::thread t2(increment);
+
+    t1.join();
+    t2.join();
+
+    std::cout << "Shared data value: " << sharedData << std::endl;
+    return 0;
+}
+/*
+在上述代码中，++sharedData 不是原子操作，由读取、加 1、写入三个步骤组成。当两个线程同时执行该操作时，可能会出现数据覆盖的情况，导致最终结果小于预期的 200000
+*/
+```
+
+### 1.2  互斥量及其使用
+
+1. 互斥量（std::mutex):保护共享数据，确保同一时间只有一个线程访问。
+2. **std::lock_guard**:是一个 RAII（资源获取即初始化）类型的锁，在构造时自动锁定互斥量，在析构时自动解锁。
+
+```cpp
+#include <iostream>
+#include <thread>
+#include <mutex>
+
+std::mutex mtx;
+int sharedData = 0;
+
+void increment() {
+    std::lock_guard<std::mutex> lock(mtx);
+    for (int i = 0; i < 100000; ++i) {
+        ++sharedData;
+    }
+}
+
+int main() {
+    std::thread t1(increment);
+    std::thread t2(increment);
+
+    t1.join();
+    t2.join();
+
+    std::cout << "Shared data value: " << sharedData << std::endl;
+    return 0;
+}
+
+/*
+std::lock_guard<std::mutex> lock(mtx); 语句在进入 increment 函数时锁定互斥量 mtx，在函数结束时自动解锁。这样同一时间只有一个线程能访问 sharedData，避免了数据竞争。
+
+*/
+```
+
+### 3. 死锁问题及解决办法
+
+- **死锁产生条件：**
+
+1. **互斥条件**：线程对资源的访问是互斥的。
+2. **占有并等待条件**：线程已经占有了至少一个资源，又在等待其他资源。
+3. **不可剥夺条件**：线程占有的资源不能被其他线程强行剥夺。
+4. **循环等待条件**：多个线程形成一个循环等待资源的链。
+
+- **避免死锁的方法：**
+
+1. **按相同顺序加锁**：所有线程都按照相同的顺序获取锁，避免循环等待。
+2. **使用 std::lock**：可以同时锁定多个互斥量，避免死锁。
+3. 示例代码
+
+```cpp
+ #include <iostream>
+#include <thread>
+#include <mutex>
+
+std::mutex mtx1;
+std::mutex mtx2;
+
+void threadA() {
+    std::lock(mtx1, mtx2);
+    std::lock_guard<std::mutex> lock1(mtx1, std::adopt_lock);
+    std::lock_guard<std::mutex> lock2(mtx2, std::adopt_lock);
+    std::cout << "Thread A acquired both locks." << std::endl;
+}
+
+void threadB() {
+    std::lock(mtx1, mtx2);
+    std::lock_guard<std::mutex> lock1(mtx1, std::adopt_lock);
+    std::lock_guard<std::mutex> lock2(mtx2, std::adopt_lock);
+    std::cout << "Thread B acquired both locks." << std::endl;
+}
+
+int main() {
+    std::thread t1(threadA);
+    std::thread t2(threadB);
+
+    t1.join();
+    t2.join();
+
+    return 0;
+}
+/*
+std::lock(mtx1, mtx2) 同时锁定 mtx1 和 mtx2，避免了死锁的发生。std::adopt_lock 表示 std::lock_guard 接管已经锁定的互斥量，在析构时自动解锁。
+*/
+```
+
+### 4. 锁的粒度
+
+**1. 粗粒度锁**：锁定范围较大，会导致线程长时间等待，降低并发性能。
+**2. 细粒度锁**：锁定范围较小，允许多个线程同时访问不同部分，提高并发性能，但会增加锁的管理开销。
+3. 示例代码:
+
+```cpp
+#include <iostream>
+#include <thread>
+#include <mutex>
+#include <vector>
+
+std::mutex coarseGrainedMutex;
+std::vector<int> coarseGrainedData(1000);
+
+std::vector<std::mutex> fineGrainedMutexes(1000);
+std::vector<int> fineGrainedData(1000);
+
+void coarseGrainedIncrement() {
+    std::lock_guard<std::mutex> lock(coarseGrainedMutex);
+    for (int i = 0; i < coarseGrainedData.size(); ++i) {
+        ++coarseGrainedData[i];
+    }
+}
+
+void fineGrainedIncrement() {
+    for (int i = 0; i < fineGrainedData.size(); ++i) {
+        std::lock_guard<std::mutex> lock(fineGrainedMutexes[i]);
+        ++fineGrainedData[i];
+    }
+}
+
+int main() {
+    std::thread t1(coarseGrainedIncrement);
+    std::thread t2(coarseGrainedIncrement);
+
+    std::thread t3(fineGrainedIncrement);
+    std::thread t4(fineGrainedIncrement);
+
+    t1.join();
+    t2.join();
+    t3.join();
+    t4.join();
+
+    return 0;
+}
+/*
+coarseGrainedIncrement 函数使用一个粗粒度的锁保护整个数据向量，同一时间只允许一个线程访问。fineGrainedIncrement 函数为每个数据元素使用一个细粒度的锁，允许多个线程同时访问不同的元素，提高了并发性能
+*/
+```
+
+### 5. 线程安全的数据结构设计
+
+**设计原则**：在设计数据结构时，要考虑数据的访问和修改操作，使用互斥量或其他同步机制保证线程安全。
+**示例代码**
+
+```cpp
+#include <iostream>
+#include <stack>
+#include <mutex>
+#include <memory>
+#include <thread>
+
+template<typename T>
+class ThreadSafeStack {
+private:
+    std::stack<T> data;
+    mutable std::mutex mtx;
+
+public:
+    void push(T value) {
+        std::lock_guard<std::mutex> lock(mtx);
+        data.push(value);
+    }
+
+    std::shared_ptr<T> pop() {
+        std::lock_guard<std::mutex> lock(mtx);
+        if (data.empty()) {
+            return std::shared_ptr<T>();
+        }
+        std::shared_ptr<T> result = std::make_shared<T>(data.top());
+        data.pop();
+        return result;
+    }
+
+    bool empty() const {
+        std::lock_guard<std::mutex> lock(mtx);
+        return data.empty();
+    }
+};
+
+void pushData(ThreadSafeStack<int>& stack) {
+    for (int i = 0; i < 10; ++i) {
+        stack.push(i);
+    }
+}
+
+void popData(ThreadSafeStack<int>& stack) {
+    for (int i = 0; i < 10; ++i) {
+        auto value = stack.pop();
+        if (value) {
+            std::cout << "Popped: " << *value << std::endl;
+        }
+    }
+}
+
+int main() {
+    ThreadSafeStack<int> stack;
+
+    std::thread t1(pushData, std::ref(stack));
+    std::thread t2(popData, std::ref(stack));
+
+    t1.join();
+    t2.join();
+
+    return 0;
+}
+/*
+ThreadSafeStack 类使用 std::mutex 保护栈的操作，确保 push、pop 和 empty 方法是线程安全的。push 方法在插入元素时锁定互斥量，pop 方法在弹出元素时锁定互斥量，empty 方法在检查栈是否为空时锁定互斥量
+*/
+```
+
+### 6. 多选题
+
+1. 以下哪些情况可能导致数据竞争？（）A. 多个线程同时读取共享数据B. 多个线程同时写入共享数据C. 一个线程读取共享数据，另一个线程写入共享数据D. 多个线程对共享数据进行原子操作
+2. 避免死锁的方法有（ ）
+   A. 按相同顺序加锁B. 随机加锁C. 使用 std::lock 同时锁定多个互斥量D. 减少线程数量
+3. 关于锁的粒度，以下说法正确的是（ ）A. 粗粒度锁可以提高并发性能B. 细粒度锁可以提高并发性能C. 粗粒度锁的管理开销较小D. 细粒度锁的管理开销较大
+4. std::lock_guard 的特点有（ ）A. 手动锁定和解锁互斥量B. 自动锁定和解锁互斥量C. 基于 RAII 原则D. 可以重复锁定和解锁
+5. 设计线程安全的数据结构时，需要考虑（ ）
+   A. 数据的访问操作
+   B. 数据的修改操作
+   C. 同步机制的使用
+   D. 数据的存储方式
+
+/*
+
+1. 答案：BC
+   解释：多个线程同时读取共享数据一般不会导致数据竞争，多个线程对共享数据进行原子操作也不会导致数据竞争。而多个线程同时写入共享数据或一个线程读取一个线程写入共享数据都可能导致数据竞争。
+2. 答案：AC
+   解释：按相同顺序加锁和使用 std::lock 同时锁定多个互斥量可以避免死锁。随机加锁可能会导致死锁，减少线程数量并不能从根本上避免死锁。
+3. 答案：BCD
+   解释：粗粒度锁锁定范围大，会降低并发性能，其管理开销较小。细粒度锁锁定范围小，能提高并发性能，但管理开销较大。
+4. 答案：BC
+   解释：std::lock_guard 基于 RAII 原则，在构造时自动锁定互斥量，在析构时自动解锁，不能手动重复锁定和解锁。
+5. 答案：ABC
+   解释：设计线程安全的数据结构时，需要考虑数据的访问和修改操作，使用合适的同步机制保证线程安全，而数据的存储方式与线程安全关系不大。
+   */
+
+### 7. 设计
+
+#### 7.1 设计题目
+
+1. 实现一个线程安全的队列
+2. 设计一个线程安全的计数器类
+3. 实现一个线程安全的哈希表
+4. **设计一个线程安全的环形缓冲区**
+   题目描述
+   设计一个线程安全的环形缓冲区（生产者 - 消费者模型），支持以下功能：
+   并发生产者线程安全地向缓冲区插入数据。
+   并发消费者线程安全地从缓冲区取出数据。
+   缓冲区满时，生产者等待；缓冲区空时，消费者等待。
+5. **使用读写锁实现线程安全的缓存系统**:
+   题目描述
+   设计一个线程安全的缓存系统，支持以下功能：
+   并发读取操作（允许多个线程同时读取）。
+   独占写入操作（同一时间只允许一个线程写入）。
+   基本操作：插入键值对、查询键值对、删除键。
+   要求使用 std::shared_mutex 实现读写锁，提高并发性能。
+
+#### 7.2 设计题目答案
+
+```cpp
+// 1. 
+#include <iostream>
+#include <queue>
+#include <mutex>
+#include <memory>
+#include <thread>
+
+template<typename T>
+class ThreadSafeQueue {
+private:
+    std::queue<T> data;
+    mutable std::mutex mtx;
+
+public:
+    void push(T value) {
+        std::lock_guard<std::mutex> lock(mtx);
+        data.push(value);
+    }
+
+    std::shared_ptr<T> pop() {
+        std::lock_guard<std::mutex> lock(mtx);
+        if (data.empty()) {
+            return std::shared_ptr<T>();
+        }
+        std::shared_ptr<T> result = std::make_shared<T>(data.front());
+        data.pop();
+        return result;
+    }
+
+    bool empty() const {
+        std::lock_guard<std::mutex> lock(mtx);
+        return data.empty();
+    }
+};
+
+void pushData(ThreadSafeQueue<int>& queue) {
+    for (int i = 0; i < 10; ++i) {
+        queue.push(i);
+    }
+}
+
+void popData(ThreadSafeQueue<int>& queue) {
+    for (int i = 0; i < 10; ++i) {
+        auto value = queue.pop();
+        if (value) {
+            std::cout << "Popped: " << *value << std::endl;
+        }
+    }
+}
+
+int main() {
+    ThreadSafeQueue<int> queue;
+
+    std::thread t1(pushData, std::ref(queue));
+    std::thread t2(popData, std::ref(queue));
+
+    t1.join();
+    t2.join();
+
+    return 0;
+}
+// 2. 
+#include <iostream>
+#include <thread>
+#include <mutex>
+
+class ThreadSafeCounter {
+private:
+    int count;
+    std::mutex mtx;
+
+public:
+    ThreadSafeCounter() : count(0) {}
+
+    void increment() {
+        std::lock_guard<std::mutex> lock(mtx);
+        ++count;
+    }
+
+    void decrement() {
+        std::lock_guard<std::mutex> lock(mtx);
+        --count;
+    }
+
+    int getCount() const {
+        std::lock_guard<std::mutex> lock(mtx);
+        return count;
+    }
+};
+
+void incrementCounter(ThreadSafeCounter& counter) {
+    for (int i = 0; i < 1000; ++i) {
+        counter.increment();
+    }
+}
+
+void decrementCounter(ThreadSafeCounter& counter) {
+    for (int i = 0; i < 1000; ++i) {
+        counter.decrement();
+    }
+}
+
+int main() {
+    ThreadSafeCounter counter;
+
+    std::thread t1(incrementCounter, std::ref(counter));
+    std::thread t2(decrementCounter, std::ref(counter));
+
+    t1.join();
+    t2.join();
+
+    std::cout << "Counter value: " << counter.getCount() << std::endl;
+    return 0;
+}
+// 3. 
+#include <iostream>
+#include <unordered_map>
+#include <mutex>
+#include <thread>
+
+template<typename Key, typename Value>
+class ThreadSafeHashTable {
+private:
+    std::unordered_map<Key, Value> data;
+    mutable std::mutex mtx;
+
+public:
+    void insert(const Key& key, const Value& value) {
+        std::lock_guard<std::mutex> lock(mtx);
+        data[key] = value;
+    }
+
+    bool find(const Key& key, Value& value) const {
+        std::lock_guard<std::mutex> lock(mtx);
+        auto it = data.find(key);
+        if (it != data.end()) {
+            value = it->second;
+            return true;
+        }
+        return false;
+    }
+
+    void remove(const Key& key) {
+        std::lock_guard<std::mutex> lock(mtx);
+        data.erase(key);
+    }
+};
+
+void insertData(ThreadSafeHashTable<int, int>& hashTable) {
+    for (int i = 0; i < 10; ++i) {
+        hashTable.insert(i, i * 2);
+    }
+}
+
+void findData(ThreadSafeHashTable<int, int>& hashTable) {
+    int value;
+    for (int i = 0; i < 10; ++i) {
+        if (hashTable.find(i, value)) {
+            std::cout << "Found key " << i << ", value: " << value << std::endl;
+        }
+    }
+}
+
+int main() {
+    ThreadSafeHashTable<int, int> hashTable;
+
+    std::thread t1(insertData, std::ref(hashTable));
+    std::thread t2(findData, std::ref(hashTable));
+
+    t1.join();
+    t2.join();
+
+    return 0;
+}
+
+// 4. 
+
+#include <iostream>
+#include <vector>
+#include <mutex>
+#include <condition_variable>
+#include <thread>
+#include <chrono>
+
+template<typename T>
+class ThreadSafeCircularBuffer {
+private:
+    std::vector<T> buffer;
+    int head;        // 队头指针
+    int tail;        // 队尾指针
+    int capacity;    // 缓冲区容量
+    mutable std::mutex mtx;
+    std::condition_variable notFull;  // 缓冲区不满的条件变量
+    std::condition_variable notEmpty; // 缓冲区不空的条件变量
+
+public:
+    ThreadSafeCircularBuffer(int size) : buffer(size), head(0), tail(0), capacity(size) {}
+
+    // 生产者：向缓冲区插入数据
+    void push(const T& value) {
+        std::unique_lock<std::mutex> lock(mtx);
+        // 等待缓冲区不满
+        notFull.wait(lock, [this]() { return (tail + 1) % capacity != head; });
+
+        buffer[tail] = value;
+        tail = (tail + 1) % capacity;
+
+        notEmpty.notify_one(); // 唤醒等待的消费者
+    }
+
+    // 消费者：从缓冲区取出数据
+    bool pop(T& value) {
+        std::unique_lock<std::mutex> lock(mtx);
+        // 等待缓冲区不空
+        notEmpty.wait(lock, [this]() { return head != tail; });
+
+        value = buffer[head];
+        head = (head + 1) % capacity;
+
+        notFull.notify_one(); // 唤醒等待的生产者
+        return true;
+    }
+};
+
+// 生产者线程函数
+void producer(ThreadSafeCircularBuffer<int>& buffer, int id) {
+    for (int i = 0; i < 5; ++i) {
+        buffer.push(i + id * 5);
+        std::cout << "Producer " << id << " pushed: " << i + id * 5 << std::endl;
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+}
+
+// 消费者线程函数
+void consumer(ThreadSafeCircularBuffer<int>& buffer, int id) {
+    int value;
+    for (int i = 0; i < 5; ++i) {
+        buffer.pop(value);
+        std::cout << "Consumer " << id << " popped: " << value << std::endl;
+        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+    }
+}
+
+int main() {
+    ThreadSafeCircularBuffer<int> buffer(10);
+
+    // 创建生产者和消费者线程
+    std::thread producer1(producer, std::ref(buffer), 1);
+    std::thread producer2(producer, std::ref(buffer), 2);
+    std::thread consumer1(consumer, std::ref(buffer), 1);
+    std::thread consumer2(consumer, std::ref(buffer), 2);
+
+    // 等待所有线程完成
+    producer1.join();
+    producer2.join();
+    consumer1.join();
+    consumer2.join();
+
+    return 0;
+}
+// 5. 
+
+#include <iostream>
+#include <unordered_map>
+#include <shared_mutex>
+#include <thread>
+#include <string>
+
+template<typename Key, typename Value>
+class ThreadSafeCache {
+private:
+    std::unordered_map<Key, Value> cache;
+    mutable std::shared_mutex rwMutex;
+
+public:
+    // 插入键值对
+    void insert(const Key& key, const Value& value) {
+        std::unique_lock<std::shared_mutex> writeLock(rwMutex);
+        cache[key] = value;
+    }
+
+    // 查询键值对
+    bool find(const Key& key, Value& value) const {
+        std::shared_lock<std::shared_mutex> readLock(rwMutex);
+        auto it = cache.find(key);
+        if (it != cache.end()) {
+            value = it->second;
+            return true;
+        }
+        return false;
+    }
+
+    // 删除键
+    void remove(const Key& key) {
+        std::unique_lock<std::shared_mutex> writeLock(rwMutex);
+        auto it = cache.find(key);
+        if (it != cache.end()) {
+            cache.erase(it);
+        }
+    }
+};
+
+// 测试读取操作的线程函数
+void readTask(ThreadSafeCache<int, std::string>& cache, int key) {
+    std::string value;
+    if (cache.find(key, value)) {
+        std::cout << "Thread " << std::this_thread::get_id() << " found key " << key << ", value: " << value << std::endl;
+    } else {
+        std::cout << "Thread " << std::this_thread::get_id() << " did not find key " << key << std::endl;
+    }
+}
+
+// 测试写入操作的线程函数
+void writeTask(ThreadSafeCache<int, std::string>& cache, int key, const std::string& value) {
+    cache.insert(key, value);
+    std::cout << "Thread " << std::this_thread::get_id() << " inserted key " << key << ", value: " << value << std::endl;
+}
+
+// 测试删除操作的线程函数
+void removeTask(ThreadSafeCache<int, std::string>& cache, int key) {
+    cache.remove(key);
+    std::cout << "Thread " << std::this_thread::get_id() << " removed key " << key << std::endl;
+}
+
+int main() {
+    ThreadSafeCache<int, std::string> cache;
+
+    // 启动写入线程
+    std::thread writer1(writeTask, std::ref(cache), 1, "Value1");
+    std::thread writer2(writeTask, std::ref(cache), 2, "Value2");
+
+    writer1.join();
+    writer2.join();
+
+    // 启动读取线程
+    std::thread reader1(readTask, std::ref(cache), 1);
+    std::thread reader2(readTask, std::ref(cache), 2);
+    std::thread reader3(readTask, std::ref(cache), 3);
+
+    reader1.join();
+    reader2.join();
+    reader3.join();
+
+    // 启动删除线程
+    std::thread remover(removeTask, std::ref(cache), 1);
+    remover.join();
+
+    // 再次读取已删除的键
+    std::thread reader4(readTask, std::ref(cache), 1);
+    reader4.join();
+
+    return 0;
+}
+```
