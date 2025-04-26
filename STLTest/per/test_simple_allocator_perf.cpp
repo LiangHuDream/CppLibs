@@ -6,7 +6,7 @@
 #include <thread>
 #include <chrono>
 #include <atomic>
-#include "../../STL/SimpleAllocator.h"
+#include "SimpleAllocator.h"
 
 using namespace std::chrono;
 
@@ -189,10 +189,10 @@ TEST_F(SimpleAllocatorPerf, MemoryFragmentationTest) {
 }
 
 // ================== 主函数 ==================
-int main(int argc, char** argv) {
-  ::testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
-}
+// int main(int argc, char** argv) {
+//   ::testing::InitGoogleTest(&argc, argv);
+//   return RUN_ALL_TESTS();
+// }
 /*
 # 编译
 g++ -std=c++17 -O3 -o perf_test test_simple_allocator_perf.cpp -lgtest -pthread

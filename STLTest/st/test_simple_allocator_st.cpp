@@ -5,7 +5,7 @@
 #include <thread>
 #include <memory>
 #include <atomic>
-#include "../../STL/SimpleAllocator.h"
+#include "SimpleAllocator.h"
 // ================== 系统测试套件 ==================
 class SimpleAllocatorST : public ::testing::Test {
 protected:
@@ -187,10 +187,10 @@ TEST_F(SimpleAllocatorST, MemoryLeakCheck) {
 }
 
 // ================== 主函数 ==================
-int main(int argc, char **argv) {
-  ::testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
-}
+// int main(int argc, char **argv) {
+//   ::testing::InitGoogleTest(&argc, argv);
+//   return RUN_ALL_TESTS();
+// }
 /*
 # 编译
 g++ -std=c++17 -O3 -o st_test test_simple_allocator_st.cpp -lgtest -pthread

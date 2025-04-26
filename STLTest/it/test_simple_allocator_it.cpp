@@ -2,7 +2,7 @@
 #include <gmock/gmock.h>
 #include <vector>
 #include <memory>
-#include "../../STL/SimpleAllocator.h"
+#include "SimpleAllocator.h"
 
 template <typename T>
 class MockAllocatorCore {
@@ -78,10 +78,10 @@ TEST_F(AllocatorITest, InitialAllocation) {
 }
 
 // ================== 主函数 ==================
-int main(int argc, char** argv) {
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
-}
+// int main(int argc, char** argv) {
+//     ::testing::InitGoogleTest(&argc, argv);
+//     return RUN_ALL_TESTS();
+// }
 
 /*
 # 编译（需安装 gtest/gmock）

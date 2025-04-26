@@ -2,7 +2,7 @@
 #include <vector>
 #include <string>
 #include <memory>
-#include "../../STL/SimpleAllocator.h"
+#include "SimpleAllocator.h"
 
 // ================== 单元测试 ==================
 class SimpleAllocatorUT : public ::testing::Test {
@@ -65,10 +65,10 @@ TEST_F(SimpleAllocatorUT, ZeroSizeAllocation) {
 }
 
 // ================== 主函数 ==================
-int main(int argc, char** argv) {
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
-}
+// int main(int argc, char** argv) {
+//     ::testing::InitGoogleTest(&argc, argv);
+//     return RUN_ALL_TESTS();
+// }
 
 /*
 g++ -std=c++17 -o test_ut simple_allocator_ut.cpp -lgtest -lgmock -pthread
