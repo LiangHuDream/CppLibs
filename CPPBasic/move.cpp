@@ -1,6 +1,8 @@
 #include <iostream>
 #include <algorithm>
  
+// 1. 五原则
+// 2. 验证移动构造
  class A {
  public:
     // 1. 构造函数
@@ -56,6 +58,7 @@
  	int size() const {
  		return sz;
  	}
+
  private:
  	int *data;
  	int sz{};
