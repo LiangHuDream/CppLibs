@@ -1,5 +1,7 @@
 #include <iostream>
 
+// 草稿版本 仅用于验证移动构造
+
 using namespace std;
 
 class A {
@@ -17,7 +19,7 @@ public:
 		copy(other.data, other.data + other.sz, data);
 	}
 
-	A(A&& other) {
+	A(A&& other) noexcept {
 		data = other.data;
 		sz = other.sz;
 
