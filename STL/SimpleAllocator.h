@@ -23,13 +23,11 @@ public:
   bool operator!=(const SimpleAllocator &) const { return false; }
   // 构造对象
   template <typename... Args> void construct(T *p, Args &&...args) {
-    // std::cout << "Constructing object at " << p << "\n";
     new (p) T(std::forward<Args>(args)...);
   }
 
   // 销毁对象
   void destroy(T *p) {
-    // std::cout << "Destroying object at " << p << "\n";
     p->~T();
   }
 
