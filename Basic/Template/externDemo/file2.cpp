@@ -7,7 +7,7 @@
 // file1.cpp
 #include "my_template.hpp"
 
-void func1() {
+void func2() {
     MyTemplate<int> b;
     b.print(100);  // 使用外部实例化的 MyTemplate<int>
     MyTemplate<double> c;
