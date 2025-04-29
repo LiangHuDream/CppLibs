@@ -6,10 +6,5 @@
  */
 #include "my_template.hpp"
 
-template<typename T>
-void MyTemplate<T>::print(T value) {
-    std::cout<< "Value:" << value << std::endl;
-}
-
 template class MyTemplate<int>;
 template class MyTemplate<double>;
