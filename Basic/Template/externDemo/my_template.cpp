@@ -9,9 +9,8 @@
 
 template<typename T>
 void MyTemplate<T>::print(T value) {
-    std::cout << "Value: " << value << std::endl;
+    std::cout<< "Value:" << value << std::endl;
 }
 
-// 显式实例化模板（实际生成代码的地方）
-template class MyTemplate<int>;    // 生成 int 版本的实例化代码
-template class MyTemplate<double>; // 生成 double 版本的实例化代码
+template class MyTemplate<int>;
+template class MyTemplate<double>;
