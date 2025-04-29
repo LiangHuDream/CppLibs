@@ -6,6 +6,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_executable(${PROJECT_NAME}.out 
     main.cpp
+    file1.cpp
+    file2.cpp
     my_template.cpp
-    my_template.h
+    my_template.hpp
 )
