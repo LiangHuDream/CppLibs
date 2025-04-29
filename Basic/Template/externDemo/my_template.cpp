@@ -6,5 +6,13 @@
  */
 #include "my_template.hpp"
 
+<<<<<<< HEAD
+=======
+template<typename T>
+void MyTemplate<T>::print(T value) {
+    std::cout<< "Value:" << value << std::endl;
+}
+
+>>>>>>> 5c5f85d3f4370fe763d280b409307715752137a3
 template class MyTemplate<int>;
 template class MyTemplate<double>;
