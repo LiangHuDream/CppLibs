@@ -3,8 +3,6 @@
 #include <gtest/gtest.h>
 
 /**
- * author: mark
- * QQ: 2548898954
  * shell: g++ taskqueue_test.cc -o taskqueue_test -lgtest -lgtest_main -lpthread
  */
 

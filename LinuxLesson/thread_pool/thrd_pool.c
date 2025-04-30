@@ -6,8 +6,6 @@
 #include "spinlock.h"
 
 /**
- * author: mark
- * QQ: 2548898954
  * shell: gcc thrd_pool.c -c -fPIC
  * shell: gcc -shared thrd_pool.o -o libthrd_pool.so -I./ -L./ -lpthread
  * usage: include thrd_pool.h & link libthrd_pool.so

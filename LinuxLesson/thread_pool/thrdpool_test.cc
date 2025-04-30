@@ -9,8 +9,6 @@
 #include <unistd.h>
 
 /**
- * author: mark 
- * QQ: 2548898954
  * shell: g++ -Wl,-rpath=./ thrdpool_test.cc -o thrdpool_test -I./ -L./ -lthrdpool -lpthread
  */
 
