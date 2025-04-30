@@ -1,0 +1,7 @@
+$ ./c_prime 
+Total primes: 664579
+Execution time: 2.747 seconds
+
+$ ./cpp_prime 
+Total primes: 664579
+Execution time: 2.72417 seconds

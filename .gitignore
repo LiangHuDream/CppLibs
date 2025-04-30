@@ -30,3 +30,6 @@
 *.app
 
 build
+
+.vscode
+
