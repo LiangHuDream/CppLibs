@@ -13,10 +13,6 @@
 #include "thread_pool.h"
 
 using namespace PoolTypeStructure;
-// 全局输出互斥量（生产环境应封装为日志模块）
-namespace {
-    std::mutex io_mutex;  // 互斥量定义
-}
 
 class ThreadPoolTest : public ::testing::Test {
 protected:
