@@ -1,15 +1,12 @@
 
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
 
 #include "thrd_pool.h"
 
-/**
- * author: mark 
- * QQ: 2548898954
- * shell: g++ taskqueue_test.cc -o taskqueue_test -lgtest -lgtest_main -lpthread
- */
+
 
 int done = 0;
 
