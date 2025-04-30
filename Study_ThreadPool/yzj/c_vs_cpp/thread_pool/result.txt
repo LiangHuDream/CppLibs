@@ -1,0 +1,5 @@
+C ThreadPool Result: 331945342506
+Execution time: 0.004 seconds
+
+C++ ThreadPool Result: 333383335000
+Execution time: 0.0078262 seconds
