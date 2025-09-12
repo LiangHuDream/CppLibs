@@ -21,8 +21,10 @@ A getA_duang()
     A a1;
     A a2;
     if (rand() > 42) {
+        // cout << "a1" << endl;
         return a1;
     } else {
+        // cout << "a2" << endl;
         return a2;
     }
 }
