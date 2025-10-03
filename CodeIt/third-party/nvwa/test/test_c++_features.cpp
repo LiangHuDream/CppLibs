@@ -1,0 +1,67 @@
+#include "nvwa/c++_features.h"
+#include <cassert>
+#include <iomanip>
+#include <iostream>
+
+#if HAVE_CXX17_OPTIONAL
+#include <optional>
+#endif
+
+using namespace std;
+
+#define DEFINITION(x) #x
+
+#define SHOW_DEFINITION(x) \
+    cout << setw(13) << #x << " is \"" << DEFINITION(x) << '"' << endl
+
+#define DISPLAY_FEATURE(x) \
+    cout << setw(34) << #x << " is " << (x) << endl
+
+int main()
+{
+    cout << left;
+    DISPLAY_FEATURE(HAVE_CXX11_ATOMIC);
+    DISPLAY_FEATURE(HAVE_CXX11_AUTO_TYPE);
+    DISPLAY_FEATURE(HAVE_CXX11_EXPLICIT_CONVERSION);
+    DISPLAY_FEATURE(HAVE_CXX11_FINAL);
+    DISPLAY_FEATURE(HAVE_CXX11_FUTURE);
+    DISPLAY_FEATURE(HAVE_CXX11_GENERALIZED_INITIALIZER);
+    DISPLAY_FEATURE(HAVE_CXX11_LAMBDA);
+    DISPLAY_FEATURE(HAVE_CXX11_MUTEX);
+    DISPLAY_FEATURE(HAVE_CXX11_NOEXCEPT);
+    DISPLAY_FEATURE(HAVE_CXX11_NULLPTR);
+    DISPLAY_FEATURE(HAVE_CXX11_OVERRIDE);
+    DISPLAY_FEATURE(HAVE_CXX11_RANGE_FOR);
+    DISPLAY_FEATURE(HAVE_CXX11_RVALUE_REFERENCE);
+    DISPLAY_FEATURE(HAVE_CXX11_STATIC_ASSERT);
+    DISPLAY_FEATURE(HAVE_CXX11_THREAD);
+    DISPLAY_FEATURE(HAVE_CXX11_THREAD_LOCAL);
+    DISPLAY_FEATURE(HAVE_CXX11_TYPE_TRAITS);
+    DISPLAY_FEATURE(HAVE_CXX11_UNICODE_LITERAL);
+    DISPLAY_FEATURE(HAVE_CXX17_STRING_VIEW);
+    DISPLAY_FEATURE(HAVE_CXX17_ANY);
+    DISPLAY_FEATURE(HAVE_CXX17_OPTIONAL);
+    DISPLAY_FEATURE(HAVE_CXX17_VARIANT);
+
+    cout << endl;
+    cout << right;
+    SHOW_DEFINITION(_FINAL);
+    SHOW_DEFINITION(_OVERRIDE);
+    SHOW_DEFINITION(_NOEXCEPT);
+    SHOW_DEFINITION(_NULLPTR);
+    SHOW_DEFINITION(_THREAD_LOCAL);
+    SHOW_DEFINITION(_FALLTHROUGH);
+    SHOW_DEFINITION(_ASSUME(true));
+
+#if HAVE_CXX17_OPTIONAL
+    std::optional<int> i;
+    bool optional_ok = false;
+    try {
+        (void)i.value();
+    }
+    catch (std::bad_optional_access& e) {
+        optional_ok = true;
+    }
+    assert(optional_ok);
+#endif
+}
