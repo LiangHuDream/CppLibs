@@ -1,0 +1,45 @@
+#include "singleton.h"
+#include <atomic>    // std::atomic
+#include <iostream>  // std::cout
+#include <mutex>     // std::mutex/lock_guard
+
+std::mutex singleton::lock_;
+std::atomic<singleton*> singleton::inst_ptr_;
+
+singleton* singleton::instance()
+{
+    singleton* ptr = inst_ptr_.load(std::memory_order_acquire);
+    if (ptr == nullptr) {
+        std::lock_guard<std::mutex> guard{lock_};
+        ptr = inst_ptr_.load(std::memory_order_relaxed);
+        if (ptr == nullptr) {
+            ptr = new singleton();
+            inst_ptr_.store(ptr, std::memory_order_release);
+        }
+    }
+    return inst_ptr_;
+}
+
+void singleton::destory()
+{
+    std::lock_guard<std::mutex> guard{lock_};
+    singleton* ptr = inst_ptr_.load(std::memory_order_acquire);
+    if (ptr) {
+        delete ptr;
+        inst_ptr_.store(nullptr, std::memory_order_release);
+    }
+}
+
+singleton::singleton()
+{
+    std::cout << "singleton is created\n";
+}
+
+singleton::~singleton()
+{
+    std::cout << "singleton is destroyed\n";
+}
+
+void singleton::do_something()
+{
+}
